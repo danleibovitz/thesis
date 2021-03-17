@@ -17,8 +17,8 @@
 \DeclareOption*{\PassOptionsToClass{\CurrentOption}{article}}
 \ProcessOptions*
 \LoadClass{article}
-\RequirePackage{times}      % Loads the Times-Roman Fonts
-\RequirePackage{mathptmx}   % Loads the Times-Roman Math Fonts
+% \RequirePackage{times}      % Loads the Times-Roman Fonts
+% \RequirePackage{mathptmx}   % Loads the Times-Roman Math Fonts
 \RequirePackage{lineno}     % For numbering the lines if lineno option is given
 \if@reqslineno\linenumbers\fi
 
@@ -29,8 +29,8 @@
 \RequirePackage{booktabs}
 \RequirePackage{authblk}
 
-\RequirePackage[left=5cm,%
-                right=2cm,%
+\RequirePackage[left=3cm,%
+                right=3cm,%
                 top=2.25cm,%
                 bottom=2.25cm,%
                 headheight=12pt,%

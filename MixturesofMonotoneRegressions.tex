@@ -51,21 +51,39 @@
 \usepackage{alltt}
 % Use option lineno for line numbers 
 \usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{mathtools}
+\usepackage{subfig}
+\usepackage{caption}
+\usepackage{bm}
+\usepackage[toc,page]{appendix}
+\usepackage[nogin]{Sweave}
+\usepackage[ruled,vlined,linesnumbered]{algorithm2e}
+
+% import libraries, code, and data
+
+% data cleaning
+
+
+% set argmin and argmax as math operators
+\DeclareMathOperator*{\argmax}{argmax}
+\DeclareMathOperator*{\argmin}{argmin}
 
 \title{Mixtures of Partially Linear Models with Monotone Shape Constraints}
 
 \author[1]{Daniel Leibovitz}
 \author[2]{Matthias Loffler}
-\affil[1]{danleibovitz@gmail.com}
-\affil[2]{Address of second author}
+\affil[1]{daniel.leibovitz@uzh.ch}
+\affil[2]{matthias.loeffler@stat.math.ethz.ch}
 
 \keywords{Mixture Models, Shape Constraints, Isotonic Regression}
 
 \begin{abstract}
-Please provide an abstract of no more than 300 words. Your abstract should explain the main contributions of your article, and should not contain any material that is not included in the main text. 
+Mixtures of non-parametric monotone regressions are readily applicable to clustering problems where there is prior knowledge about appropriate shape constraints within the resulting model. For example, utility functions in economics, risk-exposure relationships in epidemiology, are both a priori monotonic. The current standard for estimating such models involves fitting a series of non-parametric regression functions without shape constraints using an EM algorithm, as described by Zhang et al. (\cite{zhangetal}), followed by a monotonic estimate given the resulting latent variable classifications. In this paper, we propose to remove redundancy by incorporating the non-parametric monotone regression function estimate into the M-step of the EM algorithm. We demonstrate the effectiveness of the algorithm when applied to both simulated data and real-world data on global life expectancy and GDP from the World Bank.
 \end{abstract}
 \IfFileExists{upquote.sty}{\usepackage{upquote}}{}
 \begin{document}
+
 
 \flushbottom
 \maketitle
@@ -73,122 +91,1471 @@ Please provide an abstract of no more than 300 words. Your abstract should expla
 
 \section{Introduction}
 
-Thanks for using Overleaf to write your article. Your introduction goes here! Some examples of commonly used commands and features are listed below, to help you get started.
+The mixture of partially linear regressions with monotone shape constraints takes the following form:
 
-\section{An overview of contributing models}
-\subsection{Mixture models}
+\begin{equation} \label{modstrucbrief}
+  Y = 
+  \begin{dcases}
+    \sum_{h=1}^{p} g_{h1} (Z_{h}) \ +\  \sum_{j=1}^{q} \beta_{j1} X_{j} \ +\ \epsilon_1, \text{  with probability $\pi_1$; }\\
+    \vdots \\
+    \sum_{h=1}^{p} g_{hk} (Z_{h}) \ +\  \sum_{j=1}^{q} \beta_{jk} X_{j} \ +\ \epsilon_k, \text{  with probability $\pi_k$; } \\
+  \end{dcases}
+\end{equation}
 
-Guidelines can be included for standard research article sections, such as this one.
-\subsection{Partially Linear Models}
-\subsection{Isotonic Regression}
-\subsection{Past Work in Mixture Models with Monotone Shape Constraints}
-Hello
-
-
-\section{Proposed Model}
-\label{sec:examples}
-
-Use section and subsection commands to organize your document. \LaTeX{} handles all the formatting and numbering automatically. Use ref and label commands for cross-references.
+where the model has $K$ components, $\boldsymbol{X} \in \mathbb{R}^p$, $\boldsymbol{W} \in \mathbb{R}^p$, $\beta \in \mathbb{R}^p$, and each function $g_{hk}()$ is assumed monotone. The error $\epsilon$ is normally distributed with mean $0$, and is independent of the covariates $(\boldsymbol{X}, \boldsymbol{Z})$. Such a model has broad applications for clustering of data in domains where monotone relationships are known \emph{a priori}. These domains include, for example, epidemiology, where risk-exposure relationships may be modeled monotonically (\cite{morton}, \cite{carcinogen}); economics, where FILL (CITE); biomedical research, where biochemical kinetics may be monotone over time (\cite{kinetics}). 
 
 
-\subsection{Model Structure}
+A similar type of model has previously been described by Zhang et al. (\cite{zhangetal}), and takes the following form:
+
+\begin{equation} \label{zhangstruc}
+  Y = 
+  \begin{dcases}
+    \sum_{k=1}^{K}\pi_k(\sum_{h=1}^{p} g_{hk} (Z_{h}) \ +\  \sum_{j=1}^{q} \beta_{jk} X_{j} \ +\ \epsilon_k) \\
+  \end{dcases}
+\end{equation}
 
 
-\subsection{Model Estimator}
+We have identified three drawbacks of in the model and estimator of Zhang et al.:
 
-List steps of Algorithm here.
-
-We are given
-\begin{itemize}
-  \item[]	$x$ — an \(n \times p\) matrix (independent variables with no shape constraint)
-  \item[]	$z$ — an \(n \times q\) matrix (independent variables with monotone shape constraint)
-  \item[]	$y$ — an \(n \times 1\) matrix (dependent variable)
-  \item[]	$k$ — a positive integer representing the number of categories of latent variable L
-  \item[] \( \mathcal{L} \) — an \(n \times k\) matrix representing the posterior probability of observation \(i = 1,…,n\) belonging to latent category \(j = 1,...,k\). Additionally, for all \(i = 1,...,n\) and \(j = 1,...,k\), \( \mathcal{L}_{ij} \) is a real number in the range \([0,1]\), and \( \sum_{j=1}^{k} \mathcal{L}_{ij} = 1 \)
-\end{itemize}
-
-\begin{enumerate}
-  \item For each \( i \) = 1,...n, set the vector \( \mathcal{L}_{i} \) = \( [\mathcal{L}_{i1},...,\mathcal{L}_{ik}] \) as an instance of a multinomial distribution with k=k and n=1. I.e., randomly assign one of the vector elements of \( [\mathcal{L}_{i1}, ..., \mathcal{L}_{ik}] \) to 1 and all other lik to 0, such that each \( \mathcal{L}_{i} = [0,..., 1, ...,0] \) where 1 is at a random index.
-  \item In each iteration d until convergence:
-    \begin{enumerate}
-      \item M-step
-        \begin{enumerate}
-          \item hello
-        \end{enumerate}
-      \item E-step
-        \begin{enumerate}
-          \item goodbye
-        \end{enumerate}
+\begin{enumerate}[noitemsep] 
+  \item The model proposed by Zhang et al. cannot be generalized to a semiparametric approach, i.e., one cannot include linear effects in the mixture components. Being able to include linear effects in the mixture components is conducive to two distinct purposes: 
+    \begin{enumerate}[noitemsep]
+      \item First, it can be used when the data to be clustered has multiple independent variables that are not of primary interest, but which the user would still like to include in the model. As Zhang et al. point out, including such varibles with nonparametric effects can explode the complexity of the algorithm beyond usability (see Section \ref{seccomplex}). Including such variables as linear effects is a safe alternative that keeps the complexity of the algorithm tractable.
+      \item Second, users who are mainly concerned with linear effects of components within a mixture model can flexibly control for one or more nuisance variables that are suspected of being monotone in effect.
     \end{enumerate}
+  \item The Zhang et al. approach fits mixture components in two, sequential steps, first fitting an unconstrained function and then applying monotone constraints once the components membership has been calculated. This approach introduces a potential bias when components are not clearly identifiable.
+  \item The Zhang et al. approach requires a tuning parameter for the fitting of each unconstrained mixture component function, which adds computational complexity.
 \end{enumerate}
 
-\section{Simulation Study}
+We propose model \ref{modstrucbrief} as an alternative, more generalized form of the approach suggested by Zhang et al. that avoids the drawbacks mentioned above. Specifically, our model accepts any number of non-parametric monotone or linear effects within each mixture component; it fits the monotone functions within each component in a single step; and it does not require the calibration of any tuning parameters.
 
-Compare to other algorithms here?
+The main weakness of our generalized model is that the monotone component of each regression is not a smooth function, as is the case in the approach by Zhang et al., but rather a step-wise function. However, if the user does not require smooth monotone functions, the advantages of the algorithm we propose may outweigh this cost.
+
+The remainder of this paper is organized as follows. In Section 2, we discuss previous research in the domains of mixture models, partial linear models, and isotonic regression. In Section 3, we discuss the components of the proposed model. In Section 4, we describe the theoretical structure of the proposed model (model \ref{modstrucbrief}) as well as the estimation algorithm, followed by the model's asymptotic properties and empirical complexity. In Section 5, we apply the proposed model to simulated data as well as World Bank data on global life expectancy through the end of the 20\textsuperscript{th} century. In the final section, we discuss implications and future work.
 
 
-\section{Analysis of Life Expectancy Data}
+\section{Previous Work}
+
+The model proposed in this article draws from several branches of statistical research. In this section, we briefly discuss the history and current state of said research.
+
+\subsection{Regression with shape constraints}
+
+always non-parametric. monotone, concave, convex,
+discuss history, estimation methods (splines, inversion,), variance bounds.
+discuss monotone regressions in particular. different approaches -- pava, active set, etc.
+The addition of a monotonicity shape constraint to any of the models mentioned thus far complicates their estimation, and indeed much has been written on the estimation of monotone nonparametric functions alone. As Zhang et al. do in their mixture model, most approaches to monotonic nonparametric estimation apply a two step algorithm, either estimating a smooth function and applying a monotonic constraint on the resulting function (e.g., Friedman \& Tibshirani (\cite{friedman})), or estimating a monotonic function and then smoothing the resulting estimate (e.g., Cheng \& Lin (\cite{cheng})). Mammen compares the consistency of these approaches in a comprehensive treatment of smooth, monotonic nonparametric regression. Although these algorithms differ in their asymptotic behaviours, all of them require the selection of a tuning parameter (\cite{mammen}).
+
+Monotone regressions alone have seen very diverse applications across research domains. They have been used to estimate disease risk as functions of spatial exposure (CITE), etc. etc.
+
+
+
+\subsection{partial linear models}
+
+discuss GAMs
+
+\subsection{Mixture Models}
+
+Model-based clustering models, or mixture models, are a common model for producing clusters with probabalistic or "soft" cluster assignment. 
+also talk about inclusion/exclusion constraints.
+discuss asymptotic MLE.
+
+Finite mixture models date from the 19\textsuperscript{th} century (CITE), while the more commonly known implementation via the EM algorithm was first introduced in 1977 (Dempster, Laird, Rubin).
+Ifinite mixture models: \cite{infinte}
+
+\subsection{Mixtures of Regressions}
+
+From the larger set of mixture models, mixtures of regressions play a useful role in cases where we want to model a dependence structure amongst observed covariates without modelling the distributions of the covariates themselves. 
+allows the analysis of such data where the researcher suspects latent categories among the observations. 
+
+
+\subsection{Mixtures of Nonparametric Regressions}
+
+Both Xiang \& Yao (CITE), and Huang et al. (CITE) have discussed mixtures of nonparametric regressions. The model of Xiang \& Yao estimates mixing proportions and the variance of each component as constants, while allowing the mean of each component to be a nonparametric function of the data. Huang et al., by contrast, propose a model where mixing proportions, mean and variance within each mixture component are all estimated nonparametrically.
+
+Various attempts have been made at generalizing the above approaches to include linear effects, i.e., to model mixtures of partially linear models (PLMs) or generalized additive models (GAMs). Wu \& Liu (CITE) propose a structure for estimating mixtures of PLMs with a univariate nonparametric effect and arbitrary linear effects per component. Most recently, Zhang \& Pan (CITE) extended this model to accept arbitrary nonparametric effects.
+
+
+
+\subsection{Mixture Models with Monotone Shape Constraints}
+
+Within the smaller subset of mixtures of non-parametric regressions, we may frequently encounter situations in which we would like to place shape constraints on some, or each, of the components in our mixture model. A common such shape constraint is the monotonicity constraint, which ensures that in the regression model \( E(Y|X) = f(X) \), the function $f(X)$ is either non-increasing or non-decreasing over the range of $X$.
+
+There has been relatively little previous work in the modelling of mixtures of specifically monotone nonparametric regressions, with the publication by Zhang et al. standing out as the only treatment of this particular issue. There has been, however, much research in adjacent models.
+
+
+\section{An Overview of Contributing Models and Algorithms}
+
+\subsection{Mixture Models and the EM Algorithm}
+
+\subsubsection{General Mixture Models}
+
+Given some number $n$ of observed values $X_1,...,X_n$ general mixture model has the following structure:
+
+\begin{equation} \label{genmix}
+  p(x) \ =\ \sum_{k=1}^{K} \pi_k \cdot p_k(x)
+\end{equation}
+
+\begin{equation} \label{genmixlatent}
+  p(x) \ =\ \sum_{k=1}^{K} \pi_k \cdot p(x | Z_k)
+\end{equation}
+
+\subsubsection{Finite Mixtures of Regressions}
+
+At its most basic, the structure of a finite mixture of regressions model can be described without specifying the exact form of either the regression model $Y = f(\cdot|\vec{X}) + \epsilon$ or the distribution of $E(Y|\vec{X})$. Suppose we observe $Y_i,...,Y_n$ and associated $X_i,...,X_n$. We assume that each observed set $(Y_i, \vec{X_i})$ belongs to one of $\{1,...,k\}$ unobserved components, for some positive integer $k$, and we denote this by a vector of probabilities $Z_i$ of length $k$, such that $\sum_{k=1}^{K}Z_{ik} = 1$.
+
+Without loss of generality, we can assume that each specifying the exact form of the regression model $Y \sim f_k(\cdot|\vec{X})$ for component $k$, we can assume some vector of regression model parameters $\Theta$ and write the likelihood of the mixture model as such:
+
+\begin{equation} \label{mixlik}
+  L(\pi, \Theta) \ =\ \prod_{i=1}^n \sum_{j=1}^k \pi_j p_j(y_i\ |\ \vec{x_i},\ \Theta_j)
+\end{equation}
+
+
+where $\pi_j$ is the prior probability of component $j$, and $p_j$ is the density of $f(Y)$ at $y_i$ given observed $x_i$ and $\Theta_j$ for component $j$. When the likelihood is maximized and parameters are estimated, the model provides the following:
+
+\begin{enumerate}[noitemsep] 
+  \item An $n \ \times\ k$ matrix $\mathcal{L}$ representing the posterior probability of each $(Y_i, \vec{X_i})$ belonging to each of $K$ components. 
+  \item A vector $\pi_1,...,\pi_k$ of prior probabilities representing the mixing proportions of each component in the larger mixture model
+  \item A set of parameters $\Theta_k$ for each regression component $k$ 
+\end{enumerate}
+
+By extension, the fitted mixture model also allows us to compute the marginal density of $Y$ given $X = x$:
+
+\begin{equation} \label{mixmarg}
+  p(Y = y) \ =\ \sum_{k=1}^{K}\pi_k p(Y = y\ |\ X = x, \Theta_k)
+\end{equation}
+
+We find the asymptotic global maximum [@emalgo] of the likelihood function via the EM algorithm, which is described in section 3.2 (Link).
+
+\subsubsection{The EM Algorithm}
+
+A finite mixture model can be estimated via the EM algorithm for any vector of distributions that have a calculable likelihood, which of course includes regression models.
+
+\subsection{Partially Linear Models and the Backfitting Algorithm}
+
+\subsubsection{Partially Linear Models}
+
+a generalization of GAMs
+
+\subsubsection{The Backfitting Algorithm}
+
+describe backfitting
+mgcv as an alternative to backfitting
+
+\subsubsection{Partially Linear Models with Monotone Constraints}
+
+The generalized partial linear model is an additive regression model with some finite combination of linear and non-linear components, which can be denoted thus:
+
+
+\begin{equation} \label{partlin}
+  Y = \sum_{h=1}^{p} g_{h} (X_{h}) \ +\  \sum_{j=1}^{q} \beta_{j} X_{j} \ +\ \epsilon
+\end{equation}
+
+
+where the model has $h$ non-linear covariates and $j$ linear covariates, where each $g_{h}()$ is some nonparametric function of $X_{h}$, and where $\epsilon \sim Normal(0, \sigma^2)$. The parameters $\vec{\beta}$ and the functions $g_1(\cdot),...g_p(\cdot)$ are determined as the minimizers of the quadratic loss function:
+
+\begin{equation} \label{partlinloss}
+  \sum_{i=1}^{n} (y_i - \sum_{h=1}^{p} g_{h} (x_{ih}) \ -\  \sum_{j=1}^{q} \beta_{j} x_{ij})^2
+\end{equation}
+
+
+The estimation of the functions $g_1(\cdot),...g_p(\cdot)$ is a problem of isotonic regression, discussed in the next subsection.
+
+The MLE of the entire partial linear model is obtained via a backfitting algorithm suggested by Cheng [@cheng], and involves sequentially updating the linear and non-linear components of the partial linear model in a two-step process (\ref{backfit1}, \ref{backfit2}) until convergence.
+
+\begin{equation} \label{backfit1}
+  (I) \ \ \ \ \ \ \ \ \ \{\hat{g}_1,...,\hat{g}_p\} = \underset{g_1:g_p}{\operatorname{argmin}} \sum_{i=1}^n\left(y_i-\sum_{j=1}^{q} \beta_{j} x_{ij}-\sum_{h=1}^{p} g_{h} (x_{ih})\right) \\
+  \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  holding \ \ \ \vec\beta \ \ \ fixed
+\end{equation}
+
+
+\begin{equation} \label{backfit2}
+  (II) \ \ \ \ \ \ \ \ \ \hat{\vec\beta} = \underset{\beta}{\operatorname{argmin}} \sum_{i=1}^n\left(y_i-\sum_{h=1}^{p} g_{h} (x_{ih}) - \sum_{j=1}^{q} \beta_{j} x_{ij}\right) \\
+  \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  holding \ \ \ \{g_1,...,g_p\} \ \ \ fixed
+\end{equation}
+
+
+\subsection{Isotonic Regression}
+
+At the most basic level, with univariate $x$ and $y$ and a simple ordering amongst $x$ such that \( x_{1} \leq x_{2} \leq ... \leq x_{n} \) for all \( x_{i} \in X \), isotonic regression determines a non-decreasing function $g(\cdot)$ such that \( g(x_{1}) \leq g(x_{2}) \leq ... \leq g(x_{n}) \) and for which \( g(\cdot) = \argmin_{g} \sum_{i=1}^{n}(g(x_{i}) - x_{i})^2 \). If observations are weighted, the objective function becomes \( g(\cdot) = \argmin_{g} \sum_{i=1}^{n}w_{i}(g(x_{i}) - x_{i})^2 \) for weights $w$. In the so-called antitonic case, the function $g(\cdot)$ is non-increasing such that \( g(x_{1}) \geq g(x_{2}) \geq ... \geq g(x_{n}) \). Without loss of generality, from this point on we discuss only the non-decreasing case.
+
+The solution can be written out in the form of a min-max formula (\cite{jordan}):
+
+(MIN MAX EQUATION)
+
+
+One well-known way to estimate $g()$ is through the Pool Adjacent Violators Algorithm (PAVA). The PAVA -- for univariate monotone regression (\ref{pava}) -- returns a step-function fit without either having to select a bandwidth or having to set a congergence tolerance parameter. For multivariable monotone regression (\ref{cpav}), we must take a different approach suggested by Bacchetti and called the Cyclic Pool Adjacent Violators Algorithm (CPAV). Within the CPAV, we iterate through each univariate function sequentially and update univariate monotone functions until convergence, returning a sum of step-functions.
+
+
+
+\begin{equation} \label{pava}
+  Y = g(X) \ +\ \epsilon
+\end{equation}
+
+
+\begin{equation} \label{cpav}
+  Y = \sum_{h=1}^{p} g_{h} (X_{h}) \ +\ \epsilon
+\end{equation}
+
+
+% Compare our algo (Algo II) to previous algo (Algo I) here.
+% 
+% Main difference between algorithms: 
+% Algo I has non-parametric priors and non-parametric normal variances which are both functions of X (pi_c(x) and sig_c(x) for component c).
+% Algo I provides smooth monotonic estimates.
+% Algo I is not readily generalizable to partially linear models
+% Algo I uses CV to estimate tuning parameters for kernel density estimation in both mixture on non parametrics AND monotone estimate.
+% Steps of Algo I: 
+% 1. mixture of nonparametric regressions (nonparametric estimate? bandwidth/lambda?)
+% 2. monotone constraint 
+
+\section{Proposed Model}
+
+
+\subsection{Model Definition}
+
+The model proposed in this article has the following structure:
+
+\begin{equation} \label{modstruc}
+  Y = 
+  \begin{dcases}
+    \sum_{h=1}^{p} g_{h1} (Z_{h}) \ +\  \sum_{j=1}^{q} \beta_{j1} X_{j} \ +\ \epsilon_1 \text{  with probability $\pi_1$; } \\
+    \vdots \\
+    \sum_{h=1}^{p} g_{hk} (Z_{h}) \ +\  \sum_{j=1}^{q} \beta_{jk} X_{j} \ +\ \epsilon_k \text{  with probability $\pi_k$; }\\
+  \end{dcases}
+\end{equation}
+
+where $\pi_k$ represents the prior probability of mixture component $k$; $g_{hk}(\cdot)$ represents the monotone function of variable $h$ within component $k$; $\beta_{jk}$ represents the linear effect of variable $j$ within mixture component $k$; and $\epsilon_k$ represents the error associated with component $k$. All $\epsilon_k$ are assumed to be normally distributed with mean $0$, and are assumed to be independent of the covariates $(\boldsymbol{X}, \boldsymbol{Z})$ . All $\pi_k$ are assumed to be unknown constants, and all $\pi_k \in (0,1)$ such that $\sum^{K} \pi_k = 1$.
+
+There is no requirement that the $K$ regression functions in model \ref{modstruc} be identical. Specifically, $g_{hk}()$ for any $h \in p$ and any $k \in K$ can be set as monotone non-increasing, monotone non-decreasing, or absent, regardless of the other $g_{hk}$. Likewise, the linear effects $\beta_{j}$, including the intercept $\beta_0$, need not be same across different components $k$.
+
+
+\subsubsection{Model-Based Prediction}
+
+In typical mixture model frameworks, the model estimate permits the calculation of unconditioned joint distributions of the data and marginal distributions of any given variable. By extension, such typical models permit the generation of new pseudo-observations that conform with the model structure. The mixture of regressions model does not permit this type of generativity unless the distribution of the covariates is known \emph{a priori}, since the distribution of the covariates is not estimated as a part of the model. 
+
+Similarly, whereas typical mixture models can classify new observations by summing over the product of the mixture prior and the density at the new observed data (\ref{typ_mix}), a mixture of regressions model must classify with a bayesian approach of summing over the likelihood given the observed data (\ref{reg_mix}).
+
+\begin{equation} \label{typ_mix}
+  p(Y = y) \ =\ \sum_{k=1}^{K}\pi_k p_k(\vec{Y} = \vec{y}\ | \Theta_k)
+\end{equation}
+
+\begin{equation} \label{reg_mix}
+  p(Y = y | X = x) \ =\ \sum_{k=1}^{K}\frac{\pi_k p_k(y \ | \ X = x, \Theta_k)}{\int(f(x|theta)f(theta)d\theta)}p_k(Y = y\ |\ X = x, \Theta_k)
+\end{equation}
+
+This is simply the application of Bayes' theorem (\ref{bayes}), where the distributions of the components $k$ are multiplied by the posterior given $X = x$ rather than the uninformed prior $\pi_k$. Practically, it is not necessary to calculate the integral in the denominator of the posterior analytically; rather, the sum of the posteriors are normalized to sum to $1$.
+
+\begin{equation} \label{bayes}
+  p(\theta | X) \ =\ \frac{p(X|\theta)p(\theta)}{\int_{\theta}p(X|\theta)p(\theta)}
+\end{equation}
+
+
+% It should be noted that the model is NOT generative, that is, there is no distribution assumed for $X$ and therefore no reasonably probabalistic way to determine a marginal distribution of $Y$ without an observed $X$.
+
+\subsection{Model Estimation}
+
+The proposed model is obtained from a series of nested, iterative algorithms, described below. Algorithm 1 describes the EM algorithm for fitting mixture priors and observation posteriors. Algorithm 2 describes the weighted partial linear regression for the fitting of each component within each M-step of the EM algorithm. Algorithm 3 describes the weighted, cyclic pool adjacent violators algorithm for cases where there is more than one monotone function fit within a single partial linear regression. Algorithm 4 describes the weighted pool adjacent violators algorithm for fitting a single monotone regression. In all cases, convergence thresholds are set by the user.
+
+\begin{algorithm}[H]
+\SetAlgoLined
+\KwData{\;
+  $x$ — an \(n \times p\) matrix (independent variables with no shape constraint)\;
+  $z$ — an \(n \times q\) matrix (independent variables with monotone shape constraint)\;
+  $y$ — an \(n \times 1\) matrix (dependent variable)\;
+  $k$ — a positive integer representing the number of categories of latent variable L\;
+}
+\KwResult{\;
+  \( \mathcal{L} \) — an \(n \times k\) matrix representing the posterior probability of observation \(i = 1,...,n\) belonging to latent category \(j = 1,...,k\). Additionally, for all \(i = 1,...,n\) and \(j = 1,...,k\), \( \mathcal{L}_{ij} \) is a real number in the range \([0,1]\), and \( \sum_{j=1}^{k} \mathcal{L}_{ij} = 1 \) \;
+  $\vec{\pi}$ — a vector $\pi_1,...,\pi_k$ of prior probabilities representing the mixing proportions of each component in the larger mixture model \;
+  $\vec{\Theta}$ — a set of parameters $\Theta_k$ for each regression component $k$ \;
+}
+Set iteration index $d \leftarrow 1$ \;
+ \For{\( i \in 1,...n \)}{
+ With uniform probability across $k$, assign one of the elements of \( [\mathcal{L}_{i1}, ..., \mathcal{L}_{ik}] \) to 1 and all other to 0, such that \( \mathcal{L}_{i} = [0,..., 1, ...,0] \) \;}
+ \While{algorithm is not converged}{
+  % M-step:\;
+  \For{\(j \in 1,...,k\)}
+  {Set prior mixture proportion \( \displaystyle{\pi_{j}^{(d)} \leftarrow \frac{1}{n}\sum_{i=1}^{n}\mathcal{L}_{ij}^{(d-1)}} \) \;
+Set weighted partial linear model regression parameters such that \( \displaystyle{[\hat{\beta}_{j}, \hat{g}_{j}]^{(d)} \leftarrow \argmin_{\beta, g} \sum_{i=1}^{n}\mathcal{L}_{ij}^{(d-1)}(y - x\beta_{j} - g_{j}(z))^{2} } \) (See Algorithm 2, WPLR)\;}  
+
+  % E-step:\;
+  \For{\(i \in 1,...,n\)}{
+    \For{\(j \in 1,...,k\)}
+    {Set \( \mathcal{L}_{ij}^{(d)} \leftarrow \pi_{j}^{(d)}p(y_{i} | x_{i}, \beta_{j}^{(d)}, g_{j}^{(d)}(z_{i})) \), where \(p(y_{i} | x_{i}, \beta_{j}^{(d)}, g_{j}^{(d)}(z_{i}))\) is the density of a $Normal$ distribution with \(\mu = x_{i}\beta_{j}^{(d)} + g_{j}^{(d)}(z_{i})\) and \(\sigma = \sqrt{\frac{\sum w_{i}r^{2}/\bar{w}}{n-rk(X)}}\) }
+    % sigma = sqrt(sum(wates * (resids)^2 / mean(wates))/ (nrow(x)-qr(x)$rank))
+  Normalize the posterior probabilities \( [\mathcal{L}_{i1},...,\mathcal{L}_{ik}]^{(d)} \) such that \( \displaystyle{\sum_{j=1}^{k}\mathcal{L}_{ij}^{(d)} = 1} \)\;
+  }
+  
+  $d = d + 1$\;
+  
+ }
+ \caption{EM algorithm for Finite Mixtures of Regressions}
+\end{algorithm}
+
+
+\begin{algorithm}[H]
+\SetAlgoLined
+\KwData{\;
+  $x$ — an \(n \times p\) matrix (independent variables with no shape constraint)\;
+  $z$ — an \(n \times q\) matrix (independent variables with monotone shape constraint)\;
+  $y$ — an \(n \times 1\) matrix (dependent variable)\;
+  $w$ — an \(n \times 1\) matrix (observation weights)\;
+}
+\KwResult{\( \hat{\beta},\hat{g_{1}},...,\hat{g_{q}} \) such that \( \displaystyle{[\hat{\beta},\hat{g_{1}},...,\hat{g_{q}}] = \argmin_{\beta, g_{1},...,g_{q}} \sum_{i=1}^{n} w_{i}(y_{i} - \sum_{h=1}^{q}g_{h}(z_{ih}) - x_{i}\beta)^{2}} \)}
+
+ Set iteration index $b \leftarrow 1$\;
+ Set \( \displaystyle{\hat{\beta}^{(0)} \leftarrow \beta_{x}} \), where \( \displaystyle{[\beta_{x}, \beta_{z}] = \argmin_{\beta_{x}, \beta_{z}} \sum_{i=1}^{n} w_{i}(y_{i} - z_{i}\beta_{z} - x_{i}\beta_{x})^{2}}\)\;
+ \While{algorithm is not converged}{
+  \eIf{$z$ is univariate}
+  {Set \( \displaystyle{\hat{g}^{(b)} \leftarrow \argmin_{g} \sum_{i=1}^{n} w_{i}([y_{i} - x_{i}\beta^{(b-1)}] - g(z_{i}))^{2}} \) holding \( \beta^{(b-1)} \) fixed. (See Algorithm 4, PAVA)}
+  {Set \( \displaystyle{\sum_{h=1}^{q}\hat{g}_{h}^{(b)} \leftarrow \argmin_{g_{1},...,g_{q}} \sum_{i=1}^{n} w_{i}([y_{i} - x_{i}\beta^{(b-1)}] - \sum_{h=1}^{q}g_{h}(z_{ih}))^{2}} \) holding \( \beta^{(b-1)} \) fixed. (See Algorithm 3, CPAV)}
+  Set \( \displaystyle{\hat{\beta}^{(b)} = \argmin_{\beta} \sum_{i=1}^{n} w_{i}([y_{i} - g^{(b)}(z_{i})] - x_{i}\beta)^{2}} \) holding \( g^{(b)} \) fixed.\;
+  $b = b + 1$\;
+  
+ }
+ \caption{Weighted Partial Linear Regression}
+\end{algorithm}
+
+
+
+\begin{algorithm}[H]
+\SetAlgoLined
+\KwData{\;
+  $x$ — an \(n \times q\) matrix (independent variables)\;
+  $z$ — an \(n \times 1\) vector (observation weights)\;
+  $y$ — an \(n \times 1\) vector (dependent variable)\;
+}
+\KwResult{A set of non-decreasing functions \(\hat{f_1},...\hat{f_q}\) such that \( \displaystyle{[\hat{f_1},...\hat{f_q}] = \argmin_{f_1,...f_q]} \sum_{i=1}^{n} w_{i}(y_{i} - \sum_{h=1}^{q}f_h(x_{ih}))^2}  \)}
+
+ 
+ Set iteration index $m \leftarrow 1$ \;
+ \While{algorithm is not converged}{
+  \For{\(h \in 1,...,q\)}{
+  Set \( \displaystyle{\hat{f_h} \leftarrow \argmin_{f_h} \sum_{i=1}^{n} w_{i}([y_{i} - \sum_{\substack{j=1 \\ j\neq h}}^{q}f_j(x_{ih})] - f_h(x_{ih}))^2}  \) holding all $f_j(), j \neq h$ fixed (See Algorithm 4, PAVA) \;
+  }
+  
+  $m = m + 1$\;
+  
+ }
+ \caption{Weighted Cyclic Pool Adjacent Violators Algorithm}
+\end{algorithm}
+
+
+
+
+\begin{algorithm}[H]
+\SetAlgoLined
+\KwData{\;
+  $x$ — an \(n \times 1\) vector (independent variable)\;
+  $w$ — an \(n \times 1\) vector (observation weights)\;
+  $y$ — an \(n \times 1\) vector (dependent variable)\;
+}
+\KwResult{A non-decreasing function \( \displaystyle{\hat{f}(\cdot) = \argmin_{f} \sum_{i=1}^{n} w_{i}(y_{i} - f(x_{i}))^2}  \)}
+ 
+ Set iteration index $l \leftarrow 0$ \;
+ Set blocks $r \leftarrow 1, ..., B$ where at $ l = 0$, $B = n$ \;
+ Set $f^{(l=0)}(x_i) \leftarrow y_i$ \;
+ Set initial block membership $f^{(l=0)}(x_i) \in r_i$ \;
+ \While{any $f_{r}^{l}(x) \geq f_{r+1}^{l}(x)$}{
+  \If{$f_{r}^{l}(x) > f_{r+1}^{l}(x)$}
+  {Merge blocks $r$ and $r + 1$}
+  Solve $f_{r}^{(l)}()$ for block $r$ as the weighted mean, i.e, \(\displaystyle{f_{r}() = \frac{1}{\sum_{i=1}^{n}w_i}\sum_{i=1}^{n} w_i(y_i)} \) for all $x \in r$\;
+  
+  $l = l + 1$\;
+  
+ }
+ \caption{Weighted Pool Adjacent Violators Algorithm}
+\end{algorithm}
+
+%% Original algorithm without separation of component algorithms.
+% We are given
+% \begin{itemize}
+%   \item[]	$x$ — an \(n \times p\) matrix (independent variables with no shape constraint)
+%   \item[]	$z$ — an \(n \times q\) matrix (independent variables with monotone shape constraint)
+%   \item[]	$y$ — an \(n \times 1\) matrix (dependent variable)
+%   \item[]	$k$ — a positive integer representing the number of categories of latent variable L
+%   \item[] \( \mathcal{L} \) — an \(n \times k\) matrix representing the posterior probability of observation \(i = 1,...,n\) belonging to latent category \(j = 1,...,k\). Additionally, for all \(i = 1,...,n\) and \(j = 1,...,k\), \( \mathcal{L}_{ij} \) is a real number in the range \([0,1]\), and \( \sum_{j=1}^{k} \mathcal{L}_{ij} = 1 \)
+% \end{itemize}
+% 
+% \begin{enumerate}
+%   \item For each \( i \) = 1,...n, set the vector \( \mathcal{L}_{i} \) = \( [\mathcal{L}_{i1},...,\mathcal{L}_{ik}] \) as an instance of a multinomial distribution with k=k and n=1. I.e., randomly assign one of the vector elements of \( [\mathcal{L}_{i1}, ..., \mathcal{L}_{ik}] \) to 1 and all other lik to 0, such that each \( \mathcal{L}_{i} = [0,..., 1, ...,0] \) where 1 is at a random index.
+%   \item In each iteration $(d)$ until convergence:
+%     \begin{enumerate}
+%       \item M-step
+%         \begin{enumerate}
+%           \item Calculate prior mixture proportions \([p_{1},...,p_{k}]^{(d)}\) such that \( \displaystyle{p_{k}^{(d)} = \frac{1}{n}\sum_{i=1}^{n}\mathcal{L}_{ik}^{(d-1)}} \)
+%           \item Calculate weighted partial linear model regression parameters; For each \( j = 1,..., k \), estimate \( \displaystyle{[\hat{\beta}_{j}, \hat{g}_{j}]^{(d)} = \argmin_{\beta, g} \sum_{i=1}^{n}\mathcal{L}_{ij}^{(d-1)}(y - x\beta_{j} - g_{j}(z))^{2} } \) by iterating the following steps until convergence. For each iteration $b$:
+%           \begin{enumerate}
+%             \item Weighted PAVA/CPAV: If $z$ is univariate, i.e., an $n \times 1$ matrix, use PAVA to estimate \( \displaystyle{\hat{g}_{j}^{(b)} = \argmin_{g} \sum_{i=1}^{n}\mathcal{L}_{ij}^{(d-1)}([y - x\beta_{j}^{(b-1)}] - g_{j}(z))^{2}} \) holding \( \beta_{j}^{(b-1)} \) fixed. If $z$ is multivariate, use CPAV algorithm*.
+%             \item Weighted Linear Model: Estimate \( \displaystyle{\hat{\beta}_{j}^{(b)} = \argmin_{\beta} \sum_{i=1}^{n}\mathcal{L}_{ij}^{(d-1)}([y - g_{j}^{(b)}(z)] - x\beta_{j})^{2}} \) holding \( g_{j}^{(b)} \) fixed.
+%           \end{enumerate}
+%         \end{enumerate}
+%       \item E-step
+%         \begin{enumerate}
+%           \item Given $k$ regression functions \( [E(Y | X; Z) = X\beta_{k} + g_{k}(Z)]^{(d)} \), for \( i = 1,...,n \), calculate \( [\mathcal{L}_{i1},...,\mathcal{L}_{ik}]^{(d)} \) as \( [p_{1}^{(d)}P(y_{i} | x_{i}, \beta_{1}^{(d)}, g_{1}^{(d)}(z_{i})),...,p_{k}^{(d)}P(y_{i} | x_{i}, \beta_{k}^{(d)}, g_{k}^{(d)}(z_{i}))] \)
+%           \item For each \( i = 1,...,n \), normalize the posterior probabilities \( [\mathcal{L}_{i1},...,\mathcal{L}_{ik}]^{(d)} \) such that \( \displaystyle{\sum_{j=1}^{k}\mathcal{L}_{ij}^{(d)} = 1} \)
+%         \end{enumerate}
+%     \end{enumerate}
+% \end{enumerate}
+
+\subsection{Asymptotic Properties of Model and Estimator}
+
+Discuss the error estimates of parameters.
+
+
+\subsection{Confidence Intervals via Bootstrapping}
+
+\subsubsection{Ordinary Bootstrap}
+
+\subsubsection{Conditional Bootstrap}
+
+
+The obvious thing to do would be to take the bootstrapped parameters and functions as observations, and run yet another mixture model on these parameters to determine a probabalistic and bayesian interpretation of the distributions of parameters. The interpetation of such a hypothetical model would be difficult, and we leave this task for future research.
+
+\subsection{Computational Complexity of Estimator} \label{seccomplex}
+
+A common concern amongst users of this algorithm will be the speed of the estimator, and by extension, the computational complexity of the estimator. It is not possible to specify exact $O(\cdot)$ notation given that the number of iterations within each optimization step of the algorithm is problem-dependent. However, given the generalized nature of the algorithm, we can compare its complexity for different types and numbers of features within the component regression models, and we can support these comparisons with timed applications on pseudo-data.
+
+TIMED COMPLEXITY: here.
+
+
+
+In the benchmarking table above (LINK), one can see that -- for a model with 4 latent components -- adding a second monotone nonparametric effect within each component multiplies the computation time approximately 50. This is an indication of the heavy cost of increasing even slightly the dimensionality of the non-parametric estimation within each component model.
+
+By comparison, adding linear effects within the component models comes essentially for free. In fact, the estimation of models with univariate monotone effects and 4 linear effects is \emph{faster} than the complementary model without linear effects. 
+
+\section{Model Applications}
+\subsection{Simulated Data}
+
+In this section, we demonstrate the application of the proposed model by fitting it to randomly generated pseudo-data. We begin by modeling 1000 observations generated from 2 latent categories with the following underlying structure:
+
+\begin{align*}
+  Y_{1} &= 50 + X^3 + \epsilon_1 \\
+  Y_{2} &= -50 + 0.04 \cdot X^5 + 30 \cdot X + \epsilon_2 \\
+\end{align*}
+
+where 
+
+\begin{align*}
+  \epsilon_1 &\sim N(0,30) \\
+  \epsilon_2 &\sim N(0,20) \\
+\end{align*}
+
+and
+
+\begin{align*}
+  \pi_1 &= 0.65 \\
+  \pi_2 &= 0.35 \\
+\end{align*}
+
+and
+
+\begin{align*}
+  X &\sim Uniform(-10,10) \\
+\end{align*}
+
+
+We proceed to estimate a mixture of univariate regressions (\ref{m2}), with the number of components known \emph{a priori} as 2. The fitted model includes only monotone non-decreasing function of covariate $X$, and no intercept. The regression models are identical for each of the 2 components.
+
+\begin{equation} \label{m2}
+  Y = \sum_{k=1}^{2}\pi_k (g_{k} (X) \ +\  \epsilon_k)
+\end{equation}
+
+% TODO complete boostrap implementation. Have flexmix bootstrap return model with monotone fit(s) as well as posteriors for a bootstrapped rootogram
+\begin{minipage}{0.8\textwidth}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}
+
+{\centering \includegraphics[width=\maxwidth]{figure/pseudo_mixture_monovar-1} 
+
+}
+
+
+
+\end{knitrout}
+% TODO describe the confidence intervals of the bootstrapped rootogram
+\captionof{figure}[Abbrviated Caption]{The rootogram of the two-component mixture model shows the distribution of posterior probabilities with reference to the binary latent variable, for all observations used to fit the model. The model indicates higher confidence in the identification of clusters and the classification of individual observations when the observations accumulate near the limits of the rootogram, at 0 and 1. Conversely, greater mass at the center of the rootogram represents observations that are less confidently classified.}
+\end{minipage}
+
+\begin{minipage}{0.8\textwidth} 
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}
+
+{\centering \includegraphics[width=\maxwidth]{figure/pseudo_mixture_monovar_b-1} 
+
+}
+
+
+
+\end{knitrout}
+% TODO add description/explanation of how the model has difficulty estimating the functions at/after the points where the functions cross one another.
+\captionof{figure}[Abbrviated Caption]{The estimated monotone functions of the two-component mixture model, with overlaid, dotted black lines representing the true functions. The confidence intervals are generated by an ordinary (non-parametric) bootstrap.}
+\end{minipage}
+
+As can be seen from figure (\ref{pseudo_mixture_monovar_b}), the algorithm is more uncertain of the monotone regression shapes where the true data generating functions overlap. 
+
+
+Alternately, we can fit mixtures with alternate specifications for each component. In the next demonstration, we model data generated from 2 latent categories with contrary monotonic effects, i.e., one with a monotone non-increasing true function and one with a monotone non-decreasing true function. The data has the following underlying structure:
+
+\begin{align*}
+  Y_{1} &= X^3 + \epsilon_1 \\
+  Y_{2} &= 100 + 0.02 \cdot X^5 + \epsilon_2 \\
+\end{align*}
+
+where 
+
+\begin{align*}
+  \epsilon_1 &\sim N(0,30) \\
+  \epsilon_2 &\sim N(0,20) \\
+\end{align*}
+
+and
+
+\begin{align*}
+  \pi_1 &= 0.7 \\
+  \pi_2 &= 0.3 \\
+\end{align*}
+
+and
+
+\begin{align*}
+  X &\sim Uniform(-10,10) \\
+\end{align*}
+
+
+We proceed to estimate a mixture of univariate regressions (\ref{m2a}), with the number of components known \emph{a priori} as 2. The fitted model includes only monotone non-decreasing function of covariate $X$, and no intercept. The regression models are identical for each of the 2 components:
+
+\begin{equation} \label{m2a}
+  Y = 
+  \begin{dcases}
+    \pi_1 (g_{1} (X) \ +\  \epsilon_1)
+    \pi_2 (g_{2} (X) \ +\  \epsilon_2)
+  \end{dcases}
+\end{equation}
+
+where $g_{1}$ is non-decreasing, and $g_{2}$ is non-increasing.
+
+\begin{minipage}{0.8\textwidth}
+
+% TODO describe the confidence intervals of the bootstrapped rootogram
+\captionof{figure}[Abbrviated Caption]{The rootogram of the two-component mixture model shows the distribution of posterior probabilities with reference to the binary latent variable, for all observations used to fit the model. The model indicates higher confidence in the identification of clusters and the classification of individual observations when the observations accumulate near the limits of the rootogram, at 0 and 1. Conversely, greater mass at the center of the rootogram represents observations that are less confidently classified.}
+\end{minipage}
+
+\begin{minipage}{0.8\textwidth}
+
+
+\captionof{figure}[Abbrviated Caption]{The estimated monotone functions of the two-component mixture model, with overlaid, dotted black lines representing the true functions. The confidence intervals are generated by an ordinary (non-parametric) bootstrap.}
+\end{minipage}
+
+
+
+
+
+We continue the demonstration with the inclusion of linear effects. For the next model, we generate pseudo-data from 4 latent categories with the following underlying structure:
+
+
+\begin{align*}
+  Y_{1} &= 10 + X_1^3 + 1.5\cdot X_2 - 1.5\cdot X_3 - X_4 + X_5 + \epsilon_1 \\
+  Y_{2} &= -10 + 25 \cdot X_1 + 3\cdot X_2 + 2\cdot X_3 - 2\cdot X_4 + 2\cdot X_5 + \epsilon_2 \\
+  Y_{3} &= -4 + 1.5 \cdot (X_1^3) - 2\cdot X_2 - X_3 + 2\cdot X_4 + 4\cdot X_5 + \epsilon_3 \\
+  Y_{4} &= 4 + 0.1 \cdot (X_1^5) - 3\cdot X_2 - 3\cdot X_3 - 3\cdot X_4 + 3\cdot X_5 + \epsilon_4 \\
+\end{align*}
+
+where 
+
+\begin{equation*}
+\begin{aligned}[c]
+  \epsilon_1 &\sim N(0,3) \\
+  \epsilon_2 &\sim N(0,10) \\
+  \epsilon_3 &\sim N(0,3) \\
+  \epsilon_4 &\sim N(0,7) \\
+\end{aligned}
+\begin{aligned}[c]
+  X_1 &\sim Uniform(-5,5) \\
+  X_2 &\sim Uniform(-10,10) \\
+  X_3 &\sim Uniform(-100,100) \\
+  X_4 &\sim Uniform(-100,100) \\
+  X_5 &\sim Uniform(-100,100) \\
+\end{aligned}
+\end{equation*}
+
+
+We proceed to estimate a mixture of partial linear regressions (\ref{m3}), with the number of components known \emph{a priori} as 4. The fitted model includes one monotone non-decreasing function of covariate $X_1$, an intercept, and a linear effect for each of $X_2,...,X_5$. The regression models are identical for each of the 4 components.
+
+\begin{equation} \label{m3}
+  Y = \sum_{k=1}^{4}\pi_k (g_{k} (X_1) \ +\  \beta_{0,k} \ +\ \beta_{1,k}\cdot X_2 \ +\ \beta_{2,k}\cdot X_3 \ +\ \beta_{3,k}\cdot X_4 \ +\ \beta_{4,k}\cdot X_5 \ +\ \epsilon_k)
+\end{equation}
+
+\begin{minipage}{0.8\textwidth}
+
+\captionof{figure}[Abbrviated Caption]{Here we see the rootogram and mo}
+\end{minipage}
+
+\begin{minipage}{0.8\textwidth}
+
+\captionof{figure}[Abbrviated Caption]{Estimated monotone functions from within each component of the}
+\end{minipage}
+
+% TODO plot the forest-plot of linear-effect estimates and confidence intervals. How do we plot them while accounting for label switching?
+
+\subsection{Algorithm Comparisons with Simulated Data}
+
+In such instances, the proposed algorithm is demonstrably tighter around the true functions than the algorithm of Zhang et al. 
+
+(INCLUDE COMPARISON PLOTS HERE).
+
+
+
+\subsection{Real Data: Global Life Expectancy }
+
+In this section, we apply the mixture of monotone regressions to global life expectancy data. Consider data on GDP per Person and Life Expectancy of all countries between the years 1960 and 2018, drawn from the free online resources of the World Bank [@worldbank]. Specifically, the data consists of $n$ observations $(y_1, \vec{x_1}),...,(y_n,\vec{x_n})$, where $Y$ represents Life Expectancy and the vector $\vec{X}$ represents both GDP and Year. 
+
+Moreover, this data has two properties that are very common in real world data:
+\begin{enumerate}[noitemsep] 
+  \item Missing Data: 
+  \item \emph{A priori} Groupings: This data contains multiple observations per country, but we expect that our model will constrain countries to be clustered together (LINK constraints section). 
+\end{enumerate}
+
+On a first pass visualization of this data, we find a mostly linear relationship between Life Expectancy \& Year (1), and a mostly logarithmic relationship between Life Expectancy \& GDP (2). 
+
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}
+
+{\centering \includegraphics[width=\maxwidth]{figure/motivation-1} 
+
+}
+
+
+
+
+{\centering \includegraphics[width=\maxwidth]{figure/motivation-2} 
+
+}
+
+
+
+\end{knitrout}
+
+
+For the purposes of demonstration, we choose to model this data without log-transforming the GDP data in order to preserve its highly non-linear relationship with Life Expectancy. We proceed by building two step models: with and without an intercept, and each with `GDP` as the monotone covariate. Each model is in fact a series of 21 mixture models, 3 for each of $k = 1,...,7$. These models have the form of \ref{m6} and \ref{m7} respectively.
+
+\begin{equation} \label{m6}
+  Y = \sum_{k=1}^{K}\pi_k (g_{k} (GDP) \ +\  \beta_{k}\cdot Year \ +\ \epsilon_k)
+\end{equation}
+
+\begin{equation} \label{m7}
+  Y = \sum_{k=1}^{K}\pi_k (g_{k} (GDP) \ +\  \beta_{0,k} \ +\ \beta_{1,k}\cdot Year \ +\ \epsilon_k)
+\end{equation}
+
+For each series, we plot the AIC and BIC per $k$, the rootogram of the model with the lowest AIC, and the fitted monotone functions for the model with the lowest AIC.
+
+
+[PLOT MODELS AIC/BIC AND MONOTONE COMPS HERE]
+
+
+
+
+
+
+
+
+\begin{minipage}{0.8\textwidth}
+
+\captionof{figure}[Abbrviated Caption]{The }
+\end{minipage}
+
+
+
+ 
+
+Finally, we plot the distribution of clusters within the lowest-AIC model of each step-model series, projected onto a world map. In these world map plots, the colors of each cluster span a spectrum from white to full-color, representing the strength of the posterior and the confidence of the model in placing a given country within a given cluster. The world-maps indicate what the rootograms had previously indicated, namely that the resulting models are extremely confident about the clustering of nearly all countries.
+
+
+
+
+
+
+
+
 
 
 
 \section{Discussion}
 
-\subsection{Figures and Tables}
+\subsection{Applications}
 
-Use the table and tabular commands for basic tables --- see Table~\ref{tab:widgets}, for example. You can upload a figure (JPEG, PNG or PDF) using the project menu. To include it in your document, use the includegraphics command as in the code for Figure~\ref{fig:view} below.
+\subsection{Weaknesses}
 
-\begin{figure}[ht]
-\centering
-\includegraphics[width=0.7\linewidth]{frog}
-\caption{An example image of a frog.}
-\label{fig:view}
-\end{figure}
+\subsection{Future Developments}
 
-\begin{table}[ht]
-\centering
-\begin{tabular}{l|r}
-Item & Quantity \\\hline
-Candles & 4 \\
-Fork handles & ?  
-\end{tabular}
-\caption{\label{tab:widgets}An example table.}
-\end{table}
-
-\subsection{Citations}
-
-LaTeX formats citations and references automatically using the bibliography records in your .bib file, which you can edit via the project menu. Use the cite command for an inline citation, like \cite{lees2010theoretical}, and the citep command for a citation in parentheses \citep{lees2010theoretical}.
-
-\subsection{Mathematics}
-
-\LaTeX{} is great at typesetting mathematics. Let $X_1, X_2, \ldots, X_n$ be a sequence of independent and identically distributed random variables with $\text{E}[X_i] = \mu$ and $\text{Var}[X_i] = \sigma^2 < \infty$, and let
-$$S_n = \frac{X_1 + X_2 + \cdots + X_n}{n}
-      = \frac{1}{n}\sum_{i}^{n} X_i$$
-denote their mean. Then as $n$ approaches infinity, the random variables $\sqrt{n}(S_n - \mu)$ converge in distribution to a normal $\mathcal{N}(0, \sigma^2)$.
-
-\subsection{Lists}
-
-You can make lists with automatic numbering \dots
-
-\begin{enumerate}[noitemsep] 
-\item Like this,
-\item and like this.
-\end{enumerate}
-\dots or bullet points \dots
-\begin{itemize}[noitemsep] 
-\item Like this,
-\item and like this.
-\end{itemize}
-\dots or with words and descriptions \dots
-\begin{description}
-\item[Word] Definition
-\item[Concept] Explanation
-\item[Idea] Text
-\end{description}
 
 \section*{Acknowledgments}
 
-Additional information can be given in the template, such as to not include funder information in the acknowledgments section.
+Here I acknowledge all my homies.
 
-\bibliography{sample}
+\bibliography{mono}
+
+
+
+\begin{appendices}
+\chapter{R Code}
+
+
+All results in this paper were produced by an extension of Flexmix (CITE), a flexible implementation of generalized mixture models written by FLEISCH and GRUN. The package provides a framework for implementing specific types of mixture models based on a central, universal framework. It is thus intended to allow users to elaborate a specific estimator or "driver" for the modeling of mixture components, while the more abstract behaviours are managed by the Flexmix code. More specifically, Flexmix implements:
+
+\begin{enumerate}
+  \item The universal functions of the EM algorithm for assigning prior values $\pi_k$ to each of the mixture components and posterior values $\mathcal{L}_i$ to each of the observations upon each iteration of the EM algorithm;
+  \item Threshold constants for the convergence of the EM algorithm;
+  \item Restrictions on the model estimate, e.g., restricting components to have an estimated prior above a certain threshhold;
+  \item Ordinary- and parametric-bootstrap methods for the estimation of confidence intervals with respect to each component.
+\end{enumerate}
+
+Conversely, the user must provide a model estimator and a model object with a log-likelihood method, logLik() (FONT), which returns the density of an observation given a component's parameters. In the case of mixtures of regressions, this additionally implies a prediction function, predict() (FONT), which gives an expected value of an observation's dependent variable given the observed independent variables.
+
+WHAT ELSE DOES FLEXMIX DO FOR US?
+
+The code for the extension of Flexmix for modelling mixtures of partially-linear monotone regressions is included below. The first code block implements the partial linear model with monotone shape constraints; the second code block integrates the partial linear model with the Flexmix framework; the third code block provides additional functions for the visualization of results; the fourth code block implements the "conditional bootstrap" described in section (LINK).
+
+
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlcom{# Define function for fitting a partial linear model with arbitrary monotone-constrained component}
+
+\hlcom{# import libraries}
+\hlkwd{library}\hlstd{(gridExtra)}
+\hlkwd{library}\hlstd{(dplyr)}
+
+
+\hlstd{cpav} \hlkwb{<-} \hlkwa{function}\hlstd{(}\hlkwc{x_mat}\hlstd{,} \hlkwc{y}\hlstd{,} \hlkwc{weights}\hlstd{,} \hlkwc{inc_index}\hlstd{=}\hlkwa{NULL}\hlstd{,} \hlkwc{dec_index}\hlstd{=}\hlkwa{NULL}\hlstd{,} \hlkwc{max_iters_cpav}\hlstd{=}\hlkwa{NULL}\hlstd{,} \hlkwc{max_delta_cpav}\hlstd{=}\hlkwa{NULL}\hlstd{)\{}
+
+  \hlstd{joint_ind} \hlkwb{<-} \hlkwd{c}\hlstd{(inc_index, dec_index)}
+
+  \hlkwa{if}\hlstd{(}\hlopt{!}\hlkwd{is.matrix}\hlstd{(x_mat))} \hlkwd{stop}\hlstd{(}\hlstr{"x_mat is not of class matrix, and will be rejected by lm.wfit"}\hlstd{)}
+  \hlkwa{if}\hlstd{(}\hlkwd{any}\hlstd{(weights} \hlopt{==} \hlnum{0}\hlstd{))} \hlkwd{stop}\hlstd{(}\hlstr{"monoreg(), and therefore cpav(), cannot take weights of 0!"}\hlstd{)}
+  \hlkwa{if}\hlstd{(}\hlkwd{length}\hlstd{(y)} \hlopt{!=} \hlkwd{length}\hlstd{(weights)} \hlopt{|} \hlkwd{length}\hlstd{(y)} \hlopt{!=} \hlkwd{dim}\hlstd{(x_mat)[}\hlnum{1}\hlstd{])} \hlkwd{stop}\hlstd{(}\hlstr{"The dimension of the inputs is not 
+                                        equal to the dimension of the weights"}\hlstd{)}
+
+  \hlcom{# if there is only 1 monotone component, apply ordinary monotone regression}
+  \hlkwa{if}\hlstd{(}\hlkwd{length}\hlstd{(joint_ind)} \hlopt{==} \hlnum{1}\hlstd{)\{}
+    \hlkwa{if}\hlstd{(}\hlkwd{length}\hlstd{(inc_index)} \hlopt{==} \hlnum{1}\hlstd{)\{} \hlcom{# the component is monotone increasing}
+      \hlkwd{return}\hlstd{(} \hlcom{# cast the monoreg object as a matrix, with all attributes as rows in the first column}
+        \hlkwd{matrix}\hlstd{(}\hlkwd{suppressWarnings}\hlstd{(}\hlkwd{monoreg}\hlstd{(}\hlkwc{x} \hlstd{= x_mat[,inc_index],} \hlkwc{y} \hlstd{= y,} \hlkwc{w} \hlstd{= weights)),}
+               \hlkwc{dimnames} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwd{c}\hlstd{(}\hlstr{"x"}\hlstd{,} \hlstr{"y"}\hlstd{,} \hlstr{"w"}\hlstd{,} \hlstr{"yf"}\hlstd{,} \hlstr{"type"}\hlstd{,} \hlstr{"call"}\hlstd{)))}
+      \hlstd{)}
+    \hlstd{\}}
+    \hlkwa{else}\hlstd{\{} \hlcom{# the component is monotone decreasing}
+      \hlkwd{return}\hlstd{(} \hlcom{# cast the monoreg object as a matrix, with all attributes as rows in the first column}
+
+        \hlkwd{matrix}\hlstd{(}\hlkwd{suppressWarnings}\hlstd{(}\hlkwd{monoreg}\hlstd{(}\hlkwc{x} \hlstd{= x_mat[,dec_index],} \hlkwc{y} \hlstd{= y,} \hlkwc{w} \hlstd{= weights,} \hlkwc{type} \hlstd{=} \hlstr{"antitonic"}\hlstd{)),}
+               \hlkwc{dimnames} \hlstd{=} \hlkwd{list}\hlstd{(}\hlkwd{c}\hlstd{(}\hlstr{"x"}\hlstd{,} \hlstr{"y"}\hlstd{,} \hlstr{"w"}\hlstd{,} \hlstr{"yf"}\hlstd{,} \hlstr{"type"}\hlstd{,} \hlstr{"call"}\hlstd{)))}
+      \hlstd{)}
+    \hlstd{\}}
+  \hlstd{\}}
+
+  \hlkwa{else}\hlstd{\{} \hlcom{# the monotone components are multiple, so continue with cyclic algorithm}
+
+    \hlcom{# fit ordinary lm on x_mat and y}
+    \hlstd{start_betas} \hlkwb{<-} \hlkwd{coef}\hlstd{(}\hlkwd{lm.wfit}\hlstd{(}\hlkwc{x}\hlstd{=x_mat[,joint_ind],} \hlkwc{y}\hlstd{=y,} \hlkwc{w}\hlstd{=weights))}
+
+    \hlcom{# set initial monotone reg estimates by calling each monoreg() against y - lm.predict(all other vars)}
+
+    \hlstd{mr_fits} \hlkwb{<-} \hlkwd{sapply}\hlstd{(}\hlnum{1}\hlopt{:}\hlkwd{length}\hlstd{(joint_ind),} \hlkwa{function}\hlstd{(}\hlkwc{i}\hlstd{)}
+      \hlkwa{if}\hlstd{(joint_ind[i]} \hlopt{%in%} \hlstd{inc_index)\{}
+        \hlcom{# I apologize to anyone trying to read this line, but think: the columns of the x_matrix}
+        \hlcom{# indicated by join_ind, except the value of joint_ind at the ith place in joint_ind}
+        \hlkwd{suppressWarnings}\hlstd{(}\hlkwd{monoreg}\hlstd{(}\hlkwc{x} \hlstd{= x_mat[,joint_ind[i]],}
+                \hlkwc{y} \hlstd{= (y} \hlopt{-} \hlstd{(}\hlkwd{as.matrix}\hlstd{(x_mat[,joint_ind[}\hlopt{-}\hlstd{i]])} \hlopt{%*%} \hlstd{start_betas[}\hlopt{-}\hlstd{i]) ),} \hlkwc{w} \hlstd{= weights,} \hlkwc{type} \hlstd{=} \hlstr{"isotonic"}\hlstd{))}
+        \hlstd{\}}
+      \hlkwa{else if}\hlstd{(joint_ind[i]} \hlopt{%in%} \hlstd{dec_index)\{}
+        \hlkwd{suppressWarnings}\hlstd{(}\hlkwd{monoreg}\hlstd{(}\hlkwc{x} \hlstd{= x_mat[,joint_ind[i]],}
+                \hlkwc{y} \hlstd{= (y} \hlopt{-} \hlstd{(}\hlkwd{as.matrix}\hlstd{(x_mat[,joint_ind[}\hlopt{-}\hlstd{i]])} \hlopt{%*%} \hlstd{start_betas[}\hlopt{-}\hlstd{i]) ),} \hlkwc{w} \hlstd{= weights,} \hlkwc{type} \hlstd{=} \hlstr{"antitonic"}\hlstd{))}
+      \hlstd{\})}
+
+    \hlcom{# iterate through mr_fits. each column of mr_fits (e.g., mr_fits[,1]) is a monoreg fitted object,}
+    \hlcom{# and its attributes can be called (e.g., mr_fits[,1]$yf)}
+    \hlstd{iters} \hlkwb{<-} \hlnum{0}
+    \hlstd{delta} \hlkwb{<-} \hlnum{0.5}
+    \hlkwa{if}\hlstd{(}\hlkwd{is.null}\hlstd{(max_iters_cpav))\{}
+      \hlstd{max_iters_cpav} \hlkwb{<-} \hlnum{100}
+    \hlstd{\}}
+    \hlkwa{if}\hlstd{(}\hlkwd{is.null}\hlstd{(max_delta_cpav))\{}
+      \hlstd{max_delta_cpav} \hlkwb{<-} \hlnum{0.0000001}
+    \hlstd{\}}
+
+    \hlkwa{while}\hlstd{(}\hlkwd{abs}\hlstd{(delta)} \hlopt{>} \hlstd{max_delta_cpav} \hlopt{&} \hlstd{iters} \hlopt{<} \hlstd{max_iters_cpav)\{}
+      \hlstd{old_SS} \hlkwb{<-} \hlkwd{mean}\hlstd{( (y} \hlopt{-} \hlkwd{get_pred}\hlstd{(mr_fits, x_mat[,joint_ind]))}\hlopt{^}\hlnum{2} \hlstd{)}
+
+      \hlkwa{for}\hlstd{(i} \hlkwa{in} \hlnum{1}\hlopt{:}\hlkwd{length}\hlstd{(joint_ind))\{}
+        \hlkwa{if}\hlstd{(joint_ind[i]} \hlopt{%in%} \hlstd{inc_index)\{}
+          \hlcom{# I apologize to anyone trying to read this line, but think: the columns of the x_matrix}
+          \hlcom{# indicated by join_ind, except the value of joint_ind at the ith place in joint_ind}
+          \hlstd{mr_fits[,i]} \hlkwb{<-} \hlkwd{suppressWarnings}\hlstd{(}\hlkwd{monoreg}\hlstd{(}\hlkwc{x} \hlstd{= x_mat[,joint_ind[i]],}
+                                 \hlkwc{y} \hlstd{= (y} \hlopt{-} \hlkwd{get_pred}\hlstd{(mr_fits[,}\hlopt{-}\hlstd{i], x_mat[,joint_ind[}\hlopt{-}\hlstd{i]]) ),} \hlkwc{w} \hlstd{= weights,} \hlkwc{type} \hlstd{=} \hlstr{"isotonic"}\hlstd{))}
+        \hlstd{\}}
+        \hlkwa{else if}\hlstd{(joint_ind[i]} \hlopt{%in%} \hlstd{dec_index)\{}
+          \hlstd{mr_fits[,i]} \hlkwb{<-} \hlkwd{suppressWarnings}\hlstd{(}\hlkwd{monoreg}\hlstd{(}\hlkwc{x} \hlstd{= x_mat[,joint_ind[i]],}
+                                 \hlkwc{y} \hlstd{= (y} \hlopt{-} \hlkwd{get_pred}\hlstd{(mr_fits[,}\hlopt{-}\hlstd{i], x_mat[,joint_ind[}\hlopt{-}\hlstd{i]]) ),} \hlkwc{w} \hlstd{= weights,} \hlkwc{type} \hlstd{=} \hlstr{"antitonic"}\hlstd{))}
+        \hlstd{\}}
+
+      \hlstd{\}}
+
+      \hlstd{new_SS} \hlkwb{<-} \hlkwd{mean}\hlstd{( (y} \hlopt{-} \hlkwd{get_pred}\hlstd{(mr_fits, x_mat[,joint_ind]))}\hlopt{^}\hlnum{2} \hlstd{)}
+      \hlstd{delta} \hlkwb{<-} \hlstd{(old_SS} \hlopt{-} \hlstd{new_SS)}\hlopt{/}\hlstd{old_SS}
+      \hlstd{iters} \hlkwb{<-} \hlstd{iters} \hlopt{+} \hlnum{1}
+    \hlstd{\}}
+
+    \hlkwd{return}\hlstd{(mr_fits)}
+  \hlstd{\}}
+\hlstd{\}}
+
+
+\hlcom{# first, define function for obtaining f(x_new) for monotone regression f()}
+\hlcom{# get_pred returns a vector of length = nrows(xvals), ie, a value for each observation of xvals}
+\hlstd{get_pred} \hlkwb{<-} \hlkwa{function}\hlstd{(}\hlkwc{mr_obj}\hlstd{,} \hlkwc{xvals}\hlstd{)\{}
+  \hlstd{xvals} \hlkwb{<-} \hlkwd{as.matrix}\hlstd{(xvals)}
+  \hlstd{mr_obj} \hlkwb{<-} \hlkwd{as.matrix}\hlstd{(mr_obj)}
+
+  \hlkwa{if}\hlstd{(}\hlkwd{dim}\hlstd{(mr_obj)[}\hlnum{2}\hlstd{]} \hlopt{!=} \hlkwd{dim}\hlstd{(xvals)[}\hlnum{2}\hlstd{])} \hlkwd{stop}\hlstd{(}\hlstr{"get_pred() must take an X-matrix with as many columns
+                                            as monoreg() objects"}\hlstd{)}
+
+  \hlkwd{apply}\hlstd{(}\hlkwd{sapply}\hlstd{(}\hlnum{1}\hlopt{:}\hlkwd{ncol}\hlstd{(xvals),} \hlkwa{function}\hlstd{(}\hlkwc{j}\hlstd{)}
+         \hlstd{mr_obj[,j]}\hlopt{$}\hlstd{yf[}\hlkwd{sapply}\hlstd{(xvals[,j],} \hlkwa{function}\hlstd{(}\hlkwc{z}\hlstd{)}
+           \hlkwd{ifelse}\hlstd{( z} \hlopt{<} \hlstd{mr_obj[,j]}\hlopt{$}\hlstd{x[}\hlnum{1}\hlstd{],} \hlnum{1}\hlstd{,}
+            \hlkwd{ifelse}\hlstd{(z} \hlopt{>=} \hlkwd{tail}\hlstd{(mr_obj[,j]}\hlopt{$}\hlstd{x,} \hlkwc{n}\hlstd{=}\hlnum{1}\hlstd{),} \hlkwd{length}\hlstd{(mr_obj[,j]}\hlopt{$}\hlstd{x),}
+                   \hlkwd{which.min}\hlstd{(mr_obj[,j]}\hlopt{$}\hlstd{x} \hlopt{<=} \hlstd{z)}\hlopt{-}\hlnum{1} \hlstd{)))]}
+         \hlstd{),} \hlnum{1}\hlstd{,} \hlkwa{function}\hlstd{(}\hlkwc{h}\hlstd{)} \hlkwd{sum}\hlstd{(h))}
+
+\hlstd{\}}
+
+
+\hlcom{# define partial linear regression of y on x with weights w}
+\hlcom{# inputs are: x, y, wates, mon_inc_index, mon_dec_index, max_iter}
+\hlstd{part_fit} \hlkwb{<-} \hlkwa{function}\hlstd{(}\hlkwc{x}\hlstd{,} \hlkwc{y}\hlstd{,} \hlkwc{wates} \hlstd{=} \hlkwa{NULL}\hlstd{,} \hlkwc{mon_inc_index}\hlstd{=}\hlkwa{NULL}\hlstd{,} \hlkwc{mon_dec_index}\hlstd{=}\hlkwa{NULL}\hlstd{,} \hlkwc{max_iter}\hlstd{=}\hlkwa{NULL}\hlstd{,}
+                     \hlkwc{component} \hlstd{=} \hlkwa{NULL}\hlstd{,} \hlkwc{na.rm}\hlstd{=T,} \hlkwc{mono_inc_names} \hlstd{=} \hlkwa{NULL}\hlstd{,} \hlkwc{mon_dec_names} \hlstd{=} \hlkwa{NULL}\hlstd{,} \hlkwc{...}\hlstd{)\{}
+
+  \hlcom{# cast x to matrix}
+  \hlstd{x} \hlkwb{<-} \hlkwd{as.matrix}\hlstd{(x)}
+
+  \hlcom{# set default weights}
+  \hlkwa{if}\hlstd{(}\hlkwd{is.null}\hlstd{(wates)) wates} \hlkwb{<-} \hlkwd{rep}\hlstd{(}\hlnum{1}\hlstd{,} \hlkwd{length}\hlstd{(y))}
+
+  \hlcom{# remove incomplete cases}
+  \hlkwa{if}\hlstd{(T)\{} \hlcom{# for now, there is no alternative to na.rm=T.  All incomplete cases are removed.}
+    \hlstd{cc} \hlkwb{<-} \hlkwd{complete.cases}\hlstd{(y)} \hlopt{&} \hlkwd{complete.cases}\hlstd{(x)} \hlopt{&} \hlkwd{complete.cases}\hlstd{(wates)}
+    \hlstd{y} \hlkwb{<-} \hlstd{y[cc]}
+    \hlstd{x} \hlkwb{<-} \hlstd{x[cc,]}
+    \hlstd{wates} \hlkwb{<-} \hlstd{wates[cc]}
+    \hlstd{cc} \hlkwb{<-} \hlkwa{NULL}
+  \hlstd{\}}
+
+  \hlstd{x} \hlkwb{<-} \hlkwd{as.matrix}\hlstd{(x)} \hlcom{# cast again. hacky but necessary?}
+
+
+  \hlcom{# make sure y and wates is not multivariate}
+  \hlkwa{if}\hlstd{(}\hlkwd{length}\hlstd{(y)} \hlopt{!=} \hlkwd{dim}\hlstd{(x)[}\hlnum{1}\hlstd{]} \hlopt{|} \hlkwd{length}\hlstd{(y)} \hlopt{!=} \hlkwd{length}\hlstd{(wates))} \hlkwd{stop}\hlstd{(}\hlstr{"Inputs are not of the same dimension!"}\hlstd{)}
+
+  \hlcom{# take monotone indices of previous component}
+  \hlkwa{if}\hlstd{(}\hlopt{!}\hlkwd{is.null}\hlstd{(component))\{}
+    \hlstd{inc_ind} \hlkwb{<-} \hlstd{component}\hlopt{$}\hlstd{mon_inc_index}
+    \hlstd{dec_ind} \hlkwb{<-} \hlstd{component}\hlopt{$}\hlstd{mon_dec_index}
+  \hlstd{\}}
+  \hlkwa{else}\hlstd{\{}
+    \hlcom{# assume that monotone variable is first column in x and increasing, unless specified otherwise}
+    \hlkwa{if}\hlstd{(}\hlopt{!}\hlkwd{is.null}\hlstd{(mon_inc_index))\{}
+      \hlstd{inc_ind} \hlkwb{<-} \hlstd{mon_inc_index}
+    \hlstd{\}}
+    \hlkwa{else}\hlstd{\{}
+      \hlstd{inc_ind} \hlkwb{<-} \hlnum{1}
+    \hlstd{\}}
+    \hlkwa{if}\hlstd{(}\hlopt{!}\hlkwd{is.null}\hlstd{(mon_dec_index))\{}
+      \hlstd{dec_ind} \hlkwb{<-} \hlstd{mon_dec_index}
+    \hlstd{\}}
+    \hlkwa{else}\hlstd{\{}
+      \hlstd{dec_ind} \hlkwb{<-} \hlkwa{NULL}
+    \hlstd{\}}
+  \hlstd{\}}
+
+  \hlcom{# throw warning if there are duplicates in inc_ind or dec_ind, and then remove}
+  \hlkwa{if}\hlstd{(}\hlkwd{anyDuplicated}\hlstd{(inc_ind)} \hlopt{|} \hlkwd{anyDuplicated}\hlstd{(dec_ind))\{}
+    \hlkwd{warning}\hlstd{(}\hlstr{"There are duplicate index instructions; Duplicates are being removed."}\hlstd{)}
+    \hlstd{inc_ind} \hlkwb{<-} \hlkwd{unique}\hlstd{(inc_ind)}
+    \hlstd{dec_ind} \hlkwb{<-} \hlkwd{unique}\hlstd{(dec_ind)}
+  \hlstd{\}}
+
+  \hlcom{# throw error if indices overlap}
+  \hlkwa{if}\hlstd{(}\hlkwd{length}\hlstd{(}\hlkwd{intersect}\hlstd{(inc_ind, dec_ind))} \hlopt{>} \hlnum{0}\hlstd{)} \hlkwd{stop}\hlstd{(}\hlstr{"At least one variable was marked as BOTH
+                                               monotone increasing and monotone decreasing."}\hlstd{)}
+
+  \hlcom{# throw error if indices are not integers}
+  \hlkwa{if}\hlstd{(}\hlopt{!}\hlkwd{is.null}\hlstd{(inc_ind))\{}
+    \hlkwa{if}\hlstd{(}\hlkwd{any}\hlstd{(inc_ind} \hlopt{!=} \hlkwd{as.integer}\hlstd{(inc_ind)))} \hlkwd{stop}\hlstd{(}\hlstr{"Monotone increasing indices are not integers."}\hlstd{)}
+  \hlstd{\}}
+  \hlkwa{if}\hlstd{(}\hlopt{!}\hlkwd{is.null}\hlstd{(dec_ind))\{}
+    \hlkwa{if}\hlstd{(}\hlkwd{any}\hlstd{(dec_ind} \hlopt{!=} \hlkwd{as.integer}\hlstd{(dec_ind)))} \hlkwd{stop}\hlstd{(}\hlstr{"Monotone decreasing indices are not integers."}\hlstd{)}
+  \hlstd{\}}
+
+  \hlcom{# throw error if indices are not positive }
+  \hlkwa{if}\hlstd{(}\hlkwd{any}\hlstd{(}\hlkwd{c}\hlstd{(inc_ind, dec_ind)} \hlopt{<} \hlnum{1}\hlstd{))} \hlkwd{stop}\hlstd{(}\hlstr{"all monotone component indices must be positive"}\hlstd{)}
+
+  \hlcom{# throw error if the number of indices exceeds columns of x}
+  \hlkwa{if}\hlstd{(}\hlkwd{length}\hlstd{(}\hlkwd{c}\hlstd{(inc_ind, dec_ind))} \hlopt{>} \hlkwd{ncol}\hlstd{(x))} \hlkwd{stop}\hlstd{(}\hlstr{"Number of proposed monotonic relationships exceeds columns of x."}\hlstd{)}
+
+  \hlcom{# If there is an intercept but no other linear effects, stop}
+  \hlkwa{if}\hlstd{((}\hlkwd{length}\hlstd{(}\hlkwd{c}\hlstd{(inc_ind, dec_ind))}\hlopt{+}\hlnum{1}\hlstd{)} \hlopt{==} \hlkwd{ncol}\hlstd{(x)} \hlopt{&} \hlstr{"(Intercept)"} \hlopt{%in%} \hlkwd{colnames}\hlstd{(x))\{}
+    \hlkwd{stop}\hlstd{(}\hlstr{"For identifiability purposes, you cannot build a part_fit with only an intercept as a linear component."}\hlstd{)}
+  \hlstd{\}}
+
+  \hlcom{# option for fit with no linear independent components and one or multiple monotone components:}
+  \hlkwa{if}\hlstd{(}\hlkwd{length}\hlstd{(}\hlkwd{c}\hlstd{(inc_ind, dec_ind))} \hlopt{==} \hlkwd{ncol}\hlstd{(x))\{}
+
+    \hlstd{yhat} \hlkwb{<-} \hlkwd{cpav}\hlstd{(}\hlkwc{x_mat} \hlstd{=} \hlkwd{as.matrix}\hlstd{(x[wates} \hlopt{!=} \hlnum{0}\hlstd{,]),} \hlkwc{y} \hlstd{= y[wates} \hlopt{!=} \hlnum{0}\hlstd{],} \hlkwc{weights} \hlstd{= wates[wates} \hlopt{!=} \hlnum{0}\hlstd{],}
+                 \hlkwc{inc_index} \hlstd{= inc_ind,} \hlkwc{dec_index} \hlstd{= dec_ind)}
+
+    \hlcom{# get residuals of model}
+    \hlstd{resids} \hlkwb{<-} \hlstd{y} \hlopt{-} \hlkwd{get_pred}\hlstd{(yhat, x[,}\hlkwd{c}\hlstd{(inc_ind, dec_ind)])}
+
+    \hlcom{# mod must have: coef attribute, sigma attribute, cov attribute, df attribute, ..., and }
+    \hlcom{# may have mon_inc_index and mon_dec_index attributes}
+    \hlstd{mod} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{coef} \hlstd{=} \hlkwa{NULL}\hlstd{,} \hlkwc{fitted_pava} \hlstd{=} \hlkwa{NULL}\hlstd{,} \hlkwc{sigma} \hlstd{=} \hlkwa{NULL}\hlstd{,} \hlkwc{df} \hlstd{=} \hlkwa{NULL}\hlstd{,}
+                \hlkwc{mon_inc_index} \hlstd{=} \hlkwa{NULL}\hlstd{,} \hlkwc{mon_dec_index} \hlstd{=} \hlkwa{NULL}\hlstd{,} \hlkwc{iterations} \hlstd{=} \hlkwa{NULL}\hlstd{,}
+                \hlkwc{mono_inc_names} \hlstd{=} \hlkwa{NULL}\hlstd{,} \hlkwc{mon_dec_names} \hlstd{=} \hlkwa{NULL}\hlstd{)}
+
+    \hlstd{mod}\hlopt{$}\hlstd{coef} \hlkwb{<-} \hlkwa{NULL}
+    \hlstd{mod}\hlopt{$}\hlstd{fitted_pava} \hlkwb{<-} \hlstd{yhat}
+    \hlstd{mod}\hlopt{$}\hlstd{mon_inc_index} \hlkwb{<-} \hlstd{inc_ind}
+    \hlstd{mod}\hlopt{$}\hlstd{mon_dec_index} \hlkwb{<-} \hlstd{dec_ind}
+    \hlstd{mod}\hlopt{$}\hlstd{sigma} \hlkwb{<-} \hlkwd{sqrt}\hlstd{(}\hlkwd{sum}\hlstd{(wates} \hlopt{*} \hlstd{(resids)}\hlopt{^}\hlnum{2} \hlopt{/}
+                                     \hlkwd{mean}\hlstd{(wates))}\hlopt{/} \hlstd{(}\hlkwd{nrow}\hlstd{(x)}\hlopt{-}\hlkwd{qr}\hlstd{(x)}\hlopt{$}\hlstd{rank))}
+    \hlstd{mod}\hlopt{$}\hlstd{df} \hlkwb{<-} \hlkwd{ncol}\hlstd{(x)}\hlopt{+}\hlnum{1}
+
+    \hlkwd{class}\hlstd{(mod)} \hlkwb{<-} \hlstr{"part_fit"}
+
+    \hlkwd{return}\hlstd{(mod)}
+  \hlstd{\}}
+  \hlkwa{else}\hlstd{\{}
+    \hlcom{# for starting values, fit a regular lm}
+    \hlstd{fit} \hlkwb{<-} \hlkwd{lm.wfit}\hlstd{(}\hlkwc{x}\hlstd{=x,} \hlkwc{y}\hlstd{=y,} \hlkwc{w}\hlstd{=wates)}
+    \hlstd{betas} \hlkwb{<-} \hlkwd{coef}\hlstd{(fit)[}\hlopt{-}\hlkwd{c}\hlstd{(inc_ind, dec_ind)]}
+
+    \hlcom{# set maximum iterations for convergence}
+    \hlkwa{if}\hlstd{(}\hlopt{!}\hlkwd{is.null}\hlstd{(max_iter)} \hlopt{& !}\hlkwd{is.list}\hlstd{(max_iter))\{}
+      \hlkwa{if}\hlstd{(max_iter} \hlopt{<} \hlnum{1}\hlstd{)} \hlkwd{stop}\hlstd{(}\hlstr{"max_iter must be positive"}\hlstd{)}
+      \hlstd{maxiter} \hlkwb{<-} \hlstd{max_iter}
+    \hlstd{\}}
+    \hlkwa{else}\hlstd{\{}
+      \hlstd{maxiter} \hlkwb{<-} \hlnum{10000}
+    \hlstd{\}}
+
+    \hlcom{# set while loop initial values}
+    \hlstd{iter} \hlkwb{<-} \hlnum{0}
+    \hlstd{delta} \hlkwb{<-} \hlnum{10}
+    \hlcom{# iterate between pava and linear model}
+    \hlkwa{while}\hlstd{(delta} \hlopt{>} \hlnum{1e-6} \hlopt{&} \hlstd{iter} \hlopt{<} \hlstd{maxiter)\{} \hlcom{# works well enough with delta > 1e-12. Trying 1e-6}
+
+      \hlstd{yhat} \hlkwb{<-} \hlkwd{cpav}\hlstd{(}\hlkwc{x_mat} \hlstd{=} \hlkwd{as.matrix}\hlstd{(x[wates} \hlopt{!=} \hlnum{0}\hlstd{,]),} \hlkwc{y} \hlstd{= (y[wates} \hlopt{!=} \hlnum{0}\hlstd{]} \hlopt{-} \hlstd{(}\hlkwd{as.matrix}\hlstd{(x[wates} \hlopt{!=} \hlnum{0}\hlstd{,}\hlopt{-}\hlkwd{c}\hlstd{(inc_ind, dec_ind)])} \hlopt{%*%} \hlstd{betas)),}
+                   \hlkwc{weights} \hlstd{= wates[wates} \hlopt{!=} \hlnum{0}\hlstd{],} \hlkwc{inc_index} \hlstd{= inc_ind,} \hlkwc{dec_index} \hlstd{= dec_ind)}
+
+      \hlstd{old_betas} \hlkwb{<-} \hlstd{betas}    \hlcom{# save old betas for distance calculation}
+      \hlcom{# to retrieve old ordering of y for fitted values, we use y[match(x, sorted_x)]}
+      \hlstd{betas} \hlkwb{<-} \hlkwd{coef}\hlstd{(}\hlkwd{lm.wfit}\hlstd{(}\hlkwc{x}\hlstd{=}\hlkwd{as.matrix}\hlstd{(x[,}\hlopt{-}\hlkwd{c}\hlstd{(inc_ind, dec_ind)]),} \hlkwc{y}\hlstd{= (y} \hlopt{-} \hlkwd{get_pred}\hlstd{(yhat, x[,}\hlkwd{c}\hlstd{(inc_ind, dec_ind)]) ),} \hlkwc{w}\hlstd{=wates))}
+
+      \hlcom{# get euclidian distance between betas transformed into unit vectors}
+      \hlstd{delta} \hlkwb{<-} \hlkwd{dist}\hlstd{(}\hlkwd{rbind}\hlstd{(} \hlkwd{as.vector}\hlstd{(betas)}\hlopt{/}\hlkwd{norm}\hlstd{(}\hlkwd{as.vector}\hlstd{(betas),} \hlkwc{type} \hlstd{=}\hlstr{"2"}\hlstd{),}
+                           \hlkwd{as.vector}\hlstd{(old_betas)}\hlopt{/}\hlkwd{norm}\hlstd{(}\hlkwd{as.vector}\hlstd{(old_betas),} \hlkwc{type}\hlstd{=}\hlstr{"2"}\hlstd{)}
+                           \hlstd{))}
+
+      \hlstd{iter} \hlkwb{<-} \hlstd{iter} \hlopt{+} \hlnum{1}    \hlcom{# iterate maxiter}
+    \hlstd{\}}
+  \hlstd{\}}
+
+  \hlcom{# get residuals of model}
+  \hlstd{resids} \hlkwb{<-} \hlstd{y} \hlopt{-} \hlstd{(}\hlkwd{get_pred}\hlstd{(yhat, x[,}\hlkwd{c}\hlstd{(inc_ind, dec_ind)])} \hlopt{+} \hlstd{(}\hlkwd{as.matrix}\hlstd{(x[,}\hlopt{-}\hlkwd{c}\hlstd{(inc_ind, dec_ind)])} \hlopt{%*%} \hlstd{betas))}
+
+  \hlcom{# mod must have: coef attribute, sigma attribute, cov attribute, df attribute, ..., and }
+  \hlcom{# may have mon_inc_index and mon_dec_index attributes}
+  \hlstd{mod} \hlkwb{<-} \hlkwd{list}\hlstd{(}\hlkwc{coef} \hlstd{=} \hlkwa{NULL}\hlstd{,} \hlkwc{fitted_pava} \hlstd{=} \hlkwa{NULL}\hlstd{,} \hlkwc{sigma} \hlstd{=} \hlkwa{NULL}\hlstd{,} \hlkwc{df} \hlstd{=} \hlkwa{NULL}\hlstd{,}
+              \hlkwc{mon_inc_index} \hlstd{=} \hlkwa{NULL}\hlstd{,} \hlkwc{mon_dec_index} \hlstd{=} \hlkwa{NULL}\hlstd{,} \hlkwc{iterations} \hlstd{=} \hlkwa{NULL}\hlstd{,}
+              \hlkwc{mono_inc_names} \hlstd{=} \hlkwa{NULL}\hlstd{,} \hlkwc{mon_dec_names} \hlstd{=} \hlkwa{NULL}\hlstd{)}
+
+  \hlstd{mod}\hlopt{$}\hlstd{coef} \hlkwb{<-} \hlstd{betas}
+  \hlstd{mod}\hlopt{$}\hlstd{fitted_pava} \hlkwb{<-} \hlstd{yhat}
+  \hlstd{mod}\hlopt{$}\hlstd{iterations} \hlkwb{<-} \hlstd{iter}
+  \hlstd{mod}\hlopt{$}\hlstd{mon_inc_index} \hlkwb{<-} \hlstd{inc_ind}
+  \hlstd{mod}\hlopt{$}\hlstd{mon_dec_index} \hlkwb{<-} \hlstd{dec_ind}
+  \hlstd{mod}\hlopt{$}\hlstd{sigma} \hlkwb{<-} \hlkwd{sqrt}\hlstd{(}\hlkwd{sum}\hlstd{(wates} \hlopt{*} \hlstd{(resids)}\hlopt{^}\hlnum{2} \hlopt{/} \hlkwd{mean}\hlstd{(wates))}\hlopt{/} \hlstd{(}\hlkwd{nrow}\hlstd{(x)}\hlopt{-}\hlkwd{qr}\hlstd{(x)}\hlopt{$}\hlstd{rank))}
+  \hlstd{mod}\hlopt{$}\hlstd{df} \hlkwb{<-} \hlkwd{ncol}\hlstd{(x)}\hlopt{+}\hlnum{1}
+
+  \hlkwd{class}\hlstd{(mod)} \hlkwb{<-} \hlstr{"part_fit"}
+
+  \hlkwd{return}\hlstd{(mod)}
+\hlstd{\}}
+
+
+\hlcom{# write plot method for objects returned from part_fit()}
+
+\hlstd{append_suffix} \hlkwb{<-} \hlkwa{function}\hlstd{(}\hlkwc{num}\hlstd{)\{}
+  \hlstd{suff} \hlkwb{<-} \hlkwd{case_when}\hlstd{(num} \hlopt{%in%} \hlkwd{c}\hlstd{(}\hlnum{11}\hlstd{,}\hlnum{12}\hlstd{,}\hlnum{13}\hlstd{)} \hlopt{~} \hlstr{"th"}\hlstd{,}
+                    \hlstd{num} \hlopt{%%} \hlnum{10} \hlopt{==} \hlnum{1} \hlopt{~} \hlstr{'st'}\hlstd{,}
+                    \hlstd{num} \hlopt{%%} \hlnum{10} \hlopt{==} \hlnum{2} \hlopt{~} \hlstr{'nd'}\hlstd{,}
+                    \hlstd{num} \hlopt{%%} \hlnum{10} \hlopt{==} \hlnum{3} \hlopt{~}\hlstr{'rd'}\hlstd{,}
+                    \hlnum{TRUE} \hlopt{~} \hlstr{"th"}\hlstd{)}
+  \hlkwd{paste0}\hlstd{(num, suff)}
+\hlstd{\}}
+
+\hlstd{plot.part_fit} \hlkwb{<-} \hlkwa{function}\hlstd{(}\hlkwc{z}\hlstd{)\{}
+  \hlkwa{if}\hlstd{(}\hlkwd{dim}\hlstd{(}\hlkwd{as.matrix}\hlstd{(z}\hlopt{$}\hlstd{fitted_pava))[}\hlnum{2}\hlstd{]} \hlopt{>} \hlnum{1}\hlstd{)\{}
+    \hlstd{temp} \hlkwb{<-} \hlkwd{list}\hlstd{()}
+    \hlkwa{for}\hlstd{(i} \hlkwa{in} \hlnum{1}\hlopt{:}\hlkwd{dim}\hlstd{(}\hlkwd{as.matrix}\hlstd{(z}\hlopt{$}\hlstd{fitted_pava))[}\hlnum{2}\hlstd{])\{}
+      \hlstd{temp[[i]]} \hlkwb{<-} \hlkwd{ggplotGrob}\hlstd{(}\hlkwd{ggplot}\hlstd{()} \hlopt{+}
+        \hlkwd{geom_line}\hlstd{(}\hlkwd{aes}\hlstd{(}\hlkwc{x} \hlstd{= z}\hlopt{$}\hlstd{fitted_pava[,i]}\hlopt{$}\hlstd{x,} \hlkwc{y} \hlstd{= z}\hlopt{$}\hlstd{fitted_pava[,i]}\hlopt{$}\hlstd{yf))} \hlopt{+}
+        \hlkwd{theme_bw}\hlstd{()} \hlopt{+}
+        \hlkwd{labs}\hlstd{(}\hlkwc{title} \hlstd{=} \hlkwd{paste}\hlstd{(}\hlkwd{append_suffix}\hlstd{(i),} \hlstr{" Monotone Regression"}\hlstd{),}
+             \hlkwc{x} \hlstd{=} \hlstr{"X"}\hlstd{,}
+             \hlkwc{y} \hlstd{=} \hlstr{"Y"}\hlstd{))}
+    \hlstd{\}}
+    \hlkwd{return}\hlstd{(}\hlkwd{grid.arrange}\hlstd{(}\hlkwc{grobs}\hlstd{=temp,} \hlkwc{ncol}\hlstd{=}\hlnum{1}\hlstd{))}
+  \hlstd{\}}
+  \hlkwa{else}\hlstd{\{}
+    \hlstd{temp} \hlkwb{<-} \hlkwd{ggplot}\hlstd{()} \hlopt{+}
+      \hlkwd{geom_line}\hlstd{(}\hlkwd{aes}\hlstd{(}\hlkwc{x} \hlstd{= z}\hlopt{$}\hlstd{fitted_pava[,}\hlnum{1}\hlstd{]}\hlopt{$}\hlstd{x,} \hlkwc{y} \hlstd{= z}\hlopt{$}\hlstd{fitted_pava[,}\hlnum{1}\hlstd{]}\hlopt{$}\hlstd{yf))} \hlopt{+}
+      \hlkwd{theme_bw}\hlstd{()} \hlopt{+}
+      \hlkwd{labs}\hlstd{(}\hlkwc{title} \hlstd{=} \hlstr{"Monotone Regression"}\hlstd{,}
+           \hlkwc{x} \hlstd{=} \hlstr{"X"}\hlstd{,}
+           \hlkwc{y} \hlstd{=} \hlstr{"Y"}\hlstd{)}
+    \hlkwd{return}\hlstd{(temp)}
+  \hlstd{\}}
+\hlstd{\}}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlcom{# The M-step of the EM Algorithm. Meshes with Flexmix Package.}
+
+\hlcom{# allow slots defined for numeric to accept NULL}
+\hlkwd{setClassUnion}\hlstd{(}\hlstr{"numericOrNULL"}\hlstd{,}\hlkwc{members}\hlstd{=}\hlkwd{c}\hlstd{(}\hlstr{"numeric"}\hlstd{,} \hlstr{"NULL"}\hlstd{))}
+\hlkwd{setClassUnion}\hlstd{(}\hlstr{"characterOrNULL"}\hlstd{,} \hlkwc{members} \hlstd{=} \hlkwd{c}\hlstd{(}\hlstr{"character"}\hlstd{,} \hlstr{"NULL"}\hlstd{))}
+\hlkwd{setOldClass}\hlstd{(}\hlstr{"monoreg"}\hlstd{)}
+\hlkwd{setClassUnion}\hlstd{(}\hlstr{"matrixOrMonoreg"}\hlstd{,} \hlkwc{members} \hlstd{=} \hlkwd{c}\hlstd{(}\hlstr{"matrix"}\hlstd{,} \hlstr{"monoreg"}\hlstd{))}
+
+\hlcom{# Define new classes}
+\hlkwd{setClass}\hlstd{(}
+  \hlstr{"FLX_monoreg_component"}\hlstd{,}
+  \hlkwc{contains}\hlstd{=}\hlstr{"FLXcomponent"}\hlstd{,}
+  \hlcom{# allow mon_index to take either numeric or NULL}
+  \hlkwc{slots}\hlstd{=}\hlkwd{c}\hlstd{(}\hlkwc{mon_inc_index}\hlstd{=}\hlstr{"numericOrNULL"}\hlstd{,}
+          \hlkwc{mon_dec_index}\hlstd{=}\hlstr{"numericOrNULL"}\hlstd{,}
+          \hlkwc{mon_obj}\hlstd{=}\hlstr{"matrix"}\hlstd{,}
+          \hlkwc{mon_inc_names}\hlstd{=}\hlstr{"characterOrNULL"}\hlstd{,}
+          \hlkwc{mon_dec_names}\hlstd{=}\hlstr{"characterOrNULL"}
+          \hlstd{)}
+\hlstd{)}
+
+\hlcom{# Define FLXM_monoreg }
+\hlkwd{setClass}\hlstd{(}\hlstr{"FLXM_monoreg"}\hlstd{,}
+         \hlcom{# TODO what does FLXM_monoreg need to inherit?}
+         \hlkwc{contains} \hlstd{=} \hlstr{"FLXM"}\hlstd{,}
+         \hlkwc{slots} \hlstd{=} \hlkwd{c}\hlstd{(}\hlkwc{mon_inc_index}\hlstd{=}\hlstr{"numericOrNULL"}\hlstd{,}
+                   \hlkwc{mon_dec_index}\hlstd{=}\hlstr{"numericOrNULL"}\hlstd{,}
+                   \hlkwc{mon_inc_names}\hlstd{=}\hlstr{"characterOrNULL"}\hlstd{,}
+                   \hlkwc{mon_dec_names}\hlstd{=}\hlstr{"characterOrNULL"}\hlstd{))}
+
+
+
+
+
+
+\hlcom{# definition of monotone regression model.}
+\hlstd{mono_reg} \hlkwb{<-} \hlkwa{function} \hlstd{(}\hlkwc{formula} \hlstd{= .}\hlopt{~}\hlstd{.,} \hlkwc{mon_inc_names} \hlstd{=} \hlkwa{NULL}\hlstd{,}
+                      \hlkwc{mon_dec_names} \hlstd{=} \hlkwa{NULL}\hlstd{,} \hlkwc{mon_inc_index}\hlstd{=}\hlkwa{NULL}\hlstd{,} \hlkwc{mon_dec_index}\hlstd{=}\hlkwa{NULL}\hlstd{,} \hlkwc{...}\hlstd{) \{}
+
+  \hlcom{# only names or indices can be indicated, not both}
+  \hlkwa{if}\hlstd{((}\hlopt{!}\hlkwd{is.null}\hlstd{(mon_inc_names)}\hlopt{|!}\hlkwd{is.null}\hlstd{(mon_dec_names))} \hlopt{&}
+     \hlstd{(}\hlopt{!}\hlkwd{is.null}\hlstd{(mon_inc_index)}\hlopt{|!}\hlkwd{is.null}\hlstd{(mon_dec_index)))} \hlkwd{stop}\hlstd{(}\hlstr{"mono_reg() can accept either monotone
+                                                             names or indices can be chosen, but not both."}\hlstd{)}
+
+  \hlstd{retval} \hlkwb{<-} \hlkwd{new}\hlstd{(}\hlstr{"FLXM_monoreg"}\hlstd{,} \hlkwc{weighted} \hlstd{=} \hlnum{TRUE}\hlstd{,}
+                \hlkwc{formula} \hlstd{= formula,}
+                \hlkwc{name} \hlstd{=} \hlstr{"partially linear monotonic regression"}\hlstd{,}
+                \hlkwc{mon_inc_index}\hlstd{=} \hlkwd{sort}\hlstd{(mon_inc_index),}
+                \hlkwc{mon_dec_index}\hlstd{=} \hlkwd{sort}\hlstd{(mon_dec_index),}
+                \hlkwc{mon_inc_names}\hlstd{= mon_inc_names,}
+                \hlkwc{mon_dec_names}\hlstd{= mon_dec_names)}
+
+  \hlcom{# @defineComponent: Expression or function constructing the object of class FLXcomponent}
+  \hlcom{# fit must have attributes: coef, sigma, cov, df, ..., and }
+  \hlcom{# may have mon_inc_index and mon_dec_index attributes}
+  \hlcom{# ... all must be defined by fit() function}
+  \hlstd{retval}\hlopt{@}\hlkwc{defineComponent} \hlkwb{<-} \hlkwa{function}\hlstd{(}\hlkwc{fit}\hlstd{,} \hlkwc{...}\hlstd{) \{}
+                  \hlcom{# @logLik: A function(x,y) returning the log-likelihood for observations in matrices x and y}
+                  \hlstd{logLik} \hlkwb{<-} \hlkwa{function}\hlstd{(}\hlkwc{x}\hlstd{,} \hlkwc{y}\hlstd{) \{}
+                    \hlkwd{dnorm}\hlstd{(y,} \hlkwc{mean}\hlstd{=}\hlkwd{predict}\hlstd{(x, ...),} \hlkwc{sd}\hlstd{=fit}\hlopt{$}\hlstd{sigma,} \hlkwc{log}\hlstd{=}\hlnum{TRUE}\hlstd{)}
+                  \hlstd{\}}
+                  \hlcom{# @predict: A function(x) predicting y given x. }
+                  \hlcom{# TODO x must be partitioned into linear and monotone covars}
+                  \hlstd{predict} \hlkwb{<-} \hlkwa{function}\hlstd{(}\hlkwc{x}\hlstd{) \{}
+                    \hlstd{inc_ind} \hlkwb{<-} \hlstd{fit}\hlopt{$}\hlstd{mon_inc_index}
+                    \hlstd{dec_ind} \hlkwb{<-} \hlstd{fit}\hlopt{$}\hlstd{mon_dec_index}
+
+                    \hlstd{p} \hlkwb{<-}  \hlkwd{get_pred}\hlstd{(fit}\hlopt{$}\hlstd{fitted_pava, x[,}\hlkwd{c}\hlstd{(inc_ind, dec_ind)])}
+                    \hlkwa{if}\hlstd{(}\hlopt{!}\hlkwd{is.null}\hlstd{(fit}\hlopt{$}\hlstd{coef))\{}
+                      \hlstd{p} \hlkwb{<-} \hlstd{p} \hlopt{+} \hlstd{(}\hlkwd{as.matrix}\hlstd{(x[,}\hlopt{-}\hlkwd{c}\hlstd{(inc_ind, dec_ind)])} \hlopt{%*%} \hlstd{fit}\hlopt{$}\hlstd{coef)}
+                    \hlstd{\}}
+                    \hlstd{p}
+                  \hlstd{\}}
+                  \hlcom{# return new FLX_monoreg_component object}
+                  \hlkwd{new}\hlstd{(}\hlstr{"FLX_monoreg_component"}\hlstd{,} \hlkwc{parameters} \hlstd{=}
+                        \hlkwd{list}\hlstd{(}\hlkwc{coef} \hlstd{= fit}\hlopt{$}\hlstd{coef,} \hlkwc{sigma} \hlstd{= fit}\hlopt{$}\hlstd{sigma),}
+                      \hlkwc{df} \hlstd{= fit}\hlopt{$}\hlstd{df,} \hlkwc{logLik} \hlstd{= logLik,} \hlkwc{predict} \hlstd{= predict,}
+                      \hlkwc{mon_inc_index} \hlstd{= fit}\hlopt{$}\hlstd{mon_inc_index,}
+                      \hlkwc{mon_dec_index} \hlstd{= fit}\hlopt{$}\hlstd{mon_dec_index,}
+                      \hlkwc{mon_obj} \hlstd{= fit}\hlopt{$}\hlstd{fitted_pava,}
+                      \hlkwc{mon_inc_names} \hlstd{= fit}\hlopt{$}\hlstd{mon_inc_names,}
+                      \hlkwc{mon_dec_names} \hlstd{= fit}\hlopt{$}\hlstd{mon_dec_names)}
+  \hlstd{\}}
+
+  \hlcom{# @fit: A function(x,y,w) returning an object of class "FLXcomponent"}
+  \hlstd{retval}\hlopt{@}\hlkwc{fit} \hlkwb{<-} \hlkwa{function}\hlstd{(}\hlkwc{x}\hlstd{,} \hlkwc{y}\hlstd{,} \hlkwc{w}\hlstd{,} \hlkwc{component}\hlstd{,} \hlkwc{mon_inc_index} \hlstd{= retval}\hlopt{@}\hlkwc{mon_inc_index}\hlstd{,}
+                         \hlkwc{mon_dec_index} \hlstd{= retval}\hlopt{@}\hlkwc{mon_dec_index}\hlstd{,}
+                         \hlkwc{mon_inc_names} \hlstd{= retval}\hlopt{@}\hlkwc{mon_inc_names}\hlstd{,}
+                         \hlkwc{mon_dec_names} \hlstd{= retval}\hlopt{@}\hlkwc{mon_dec_names}\hlstd{,} \hlkwc{...}\hlstd{) \{}
+
+
+                  \hlkwa{if}\hlstd{(}\hlkwd{is.null}\hlstd{(mon_inc_index)} \hlopt{&} \hlkwd{is.null}\hlstd{(mon_dec_index))\{}
+
+                    \hlcom{# if not all monotone names are in the design matrix, stop & print the name that is missing}
+                    \hlkwa{if}\hlstd{(}\hlopt{!}\hlkwd{all}\hlstd{(}\hlkwd{c}\hlstd{(mon_inc_names, mon_dec_names)} \hlopt{%in%} \hlkwd{colnames}\hlstd{(x)))\{}
+                      \hlkwd{stop}\hlstd{(}\hlkwd{paste}\hlstd{(}\hlkwd{setdiff}\hlstd{(}\hlkwd{c}\hlstd{(mon_inc_names, mon_dec_names),} \hlkwd{colnames}\hlstd{(x)),}
+                                 \hlstr{"could not be found in the model matrix. Check your spelling."}\hlstd{))}
+                    \hlstd{\}}
+                    \hlcom{# Discover correct monotone indices}
+                    \hlkwa{if}\hlstd{(}\hlkwd{any}\hlstd{(}\hlkwd{colnames}\hlstd{(x)} \hlopt{%in%} \hlstd{mon_inc_names))\{}
+                      \hlstd{mon_inc_index} \hlkwb{<-} \hlkwd{which}\hlstd{(}\hlkwd{colnames}\hlstd{(x)} \hlopt{%in%} \hlstd{mon_inc_names)}
+                    \hlstd{\}}
+                    \hlkwa{if}\hlstd{(}\hlkwd{any}\hlstd{(}\hlkwd{colnames}\hlstd{(x)} \hlopt{%in%} \hlstd{mon_dec_names))\{}
+                      \hlstd{mon_dec_index} \hlkwb{<-} \hlkwd{which}\hlstd{(}\hlkwd{colnames}\hlstd{(x)} \hlopt{%in%} \hlstd{mon_dec_names)}
+                    \hlstd{\}}
+                  \hlstd{\}}
+                  \hlkwa{if}\hlstd{(}\hlkwd{is.null}\hlstd{(mon_inc_names)} \hlopt{&} \hlkwd{is.null}\hlstd{(mon_dec_names))\{}
+                    \hlcom{# Discover correct monotone names}
+                    \hlstd{mon_inc_names} \hlkwb{<-} \hlkwd{colnames}\hlstd{(x)[}\hlkwd{sort}\hlstd{(mon_inc_index)]}
+                    \hlstd{mon_dec_names} \hlkwb{<-} \hlkwd{colnames}\hlstd{(x)[}\hlkwd{sort}\hlstd{(mon_dec_index)]}
+                  \hlstd{\}}
+
+                  \hlcom{# if(any(apply(x, 2, function(x) is.factor(x)))) stop("x cannot have factor columns as monotone components")}
+
+                  \hlstd{fit} \hlkwb{<-} \hlkwd{part_fit}\hlstd{(x, y, w, component,} \hlkwc{mon_inc_index}\hlstd{=mon_inc_index,}
+                                  \hlkwc{mon_dec_index}\hlstd{=mon_dec_index, ...)}
+
+                  \hlstd{retval}\hlopt{@}\hlkwc{defineComponent}\hlstd{(fit, ...)}
+                  \hlstd{\}}
+  \hlstd{retval}
+  \hlstd{\}}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlcom{# Wrapper functions for Flexmix objects with monoreg components}
+
+\hlcom{# import libraries}
+\hlkwd{library}\hlstd{(ggplot2)}
+\hlkwd{library}\hlstd{(grid)}
+\hlkwd{library}\hlstd{(gridExtra)}
+\hlkwd{library}\hlstd{(RColorBrewer)}
+
+
+\hlcom{# Multiple plot function}
+\hlcom{#}
+\hlcom{# ggplot objects can be passed in ..., or to plotlist (as a list of ggplot objects)}
+\hlcom{# - cols:   Number of columns in layout}
+\hlcom{# - layout: A matrix specifying the layout. If present, 'cols' is ignored.}
+\hlcom{#}
+\hlcom{# If the layout is something like matrix(c(1,2,3,3), nrow=2, byrow=TRUE),}
+\hlcom{# then plot 1 will go in the upper left, 2 will go in the upper right, and}
+\hlcom{# 3 will go all the way across the bottom.}
+\hlcom{#}
+\hlstd{multiplot} \hlkwb{<-} \hlkwa{function}\hlstd{(}\hlkwc{...}\hlstd{,} \hlkwc{plotlist}\hlstd{=}\hlkwa{NULL}\hlstd{,} \hlkwc{file}\hlstd{,} \hlkwc{cols}\hlstd{=}\hlnum{1}\hlstd{,} \hlkwc{layout}\hlstd{=}\hlkwa{NULL}\hlstd{) \{}
+  \hlkwd{library}\hlstd{(grid)}
+
+  \hlcom{# Make a list from the ... arguments and plotlist}
+  \hlstd{plots} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlkwd{list}\hlstd{(...), plotlist)}
+
+  \hlstd{numPlots} \hlkwb{=} \hlkwd{length}\hlstd{(plots)}
+
+  \hlcom{# If layout is NULL, then use 'cols' to determine layout}
+  \hlkwa{if} \hlstd{(}\hlkwd{is.null}\hlstd{(layout)) \{}
+    \hlcom{# Make the panel}
+    \hlcom{# ncol: Number of columns of plots}
+    \hlcom{# nrow: Number of rows needed, calculated from # of cols}
+    \hlstd{layout} \hlkwb{<-} \hlkwd{matrix}\hlstd{(}\hlkwd{seq}\hlstd{(}\hlnum{1}\hlstd{, cols} \hlopt{*} \hlkwd{ceiling}\hlstd{(numPlots}\hlopt{/}\hlstd{cols)),}
+                     \hlkwc{ncol} \hlstd{= cols,} \hlkwc{nrow} \hlstd{=} \hlkwd{ceiling}\hlstd{(numPlots}\hlopt{/}\hlstd{cols))}
+  \hlstd{\}}
+
+  \hlkwa{if} \hlstd{(numPlots}\hlopt{==}\hlnum{1}\hlstd{) \{}
+    \hlkwd{print}\hlstd{(plots[[}\hlnum{1}\hlstd{]])}
+
+  \hlstd{\}} \hlkwa{else} \hlstd{\{}
+    \hlcom{# Set up the page}
+    \hlkwd{grid.newpage}\hlstd{()}
+    \hlkwd{pushViewport}\hlstd{(}\hlkwd{viewport}\hlstd{(}\hlkwc{layout} \hlstd{=} \hlkwd{grid.layout}\hlstd{(}\hlkwd{nrow}\hlstd{(layout),} \hlkwd{ncol}\hlstd{(layout))))}
+
+    \hlcom{# Make each plot, in the correct location}
+    \hlkwa{for} \hlstd{(i} \hlkwa{in} \hlnum{1}\hlopt{:}\hlstd{numPlots) \{}
+      \hlcom{# Get the i,j matrix positions of the regions that contain this subplot}
+      \hlstd{matchidx} \hlkwb{<-} \hlkwd{as.data.frame}\hlstd{(}\hlkwd{which}\hlstd{(layout} \hlopt{==} \hlstd{i,} \hlkwc{arr.ind} \hlstd{=} \hlnum{TRUE}\hlstd{))}
+
+      \hlkwd{print}\hlstd{(plots[[i]],} \hlkwc{vp} \hlstd{=} \hlkwd{viewport}\hlstd{(}\hlkwc{layout.pos.row} \hlstd{= matchidx}\hlopt{$}\hlstd{row,}
+                                      \hlkwc{layout.pos.col} \hlstd{= matchidx}\hlopt{$}\hlstd{col))}
+    \hlstd{\}}
+  \hlstd{\}}
+\hlstd{\}}
+
+
+\hlcom{####}
+
+\hlcom{# overwrite method for plot.flexmix}
+\hlkwd{setMethod}\hlstd{(}\hlstr{'plot'}\hlstd{,}  \hlkwd{signature}\hlstd{(}\hlkwc{x}\hlstd{=}\hlstr{"flexmix"}\hlstd{,} \hlkwc{y}\hlstd{=}\hlstr{"missing"}\hlstd{),}
+          \hlkwa{function}\hlstd{(}\hlkwc{x}\hlstd{,} \hlkwc{mark}\hlstd{=}\hlkwa{NULL}\hlstd{,} \hlkwc{markcol}\hlstd{=}\hlkwa{NULL}\hlstd{,} \hlkwc{col}\hlstd{=}\hlkwa{NULL}\hlstd{,}
+                   \hlkwc{eps}\hlstd{=}\hlnum{1e-4}\hlstd{,} \hlkwc{root}\hlstd{=}\hlnum{TRUE}\hlstd{,} \hlkwc{ylim}\hlstd{=}\hlkwa{NULL}\hlstd{,} \hlkwc{xlim}\hlstd{=}\hlkwa{NULL}\hlstd{,} \hlkwc{main}\hlstd{=}\hlkwa{NULL}\hlstd{,} \hlkwc{xlab}\hlstd{=}\hlkwa{NULL}\hlstd{,} \hlkwc{ylab}\hlstd{=}\hlkwa{NULL}\hlstd{,}
+                   \hlkwc{as.table} \hlstd{=} \hlnum{TRUE}\hlstd{,} \hlkwc{endpoints} \hlstd{=} \hlkwd{c}\hlstd{(}\hlopt{-}\hlnum{0.04}\hlstd{,} \hlnum{1.04}\hlstd{),} \hlkwc{rootogram}\hlstd{=F,} \hlkwc{palet} \hlstd{=} \hlkwa{NULL}\hlstd{,}
+                   \hlkwc{root_scale} \hlstd{=} \hlstr{"unscaled"}\hlstd{,} \hlkwc{subplot}\hlstd{=}\hlkwa{NULL}\hlstd{,} \hlkwc{...}\hlstd{) \{}
+
+            \hlkwa{if}\hlstd{(}\hlkwd{is.null}\hlstd{(palet))\{}
+              \hlstd{palet} \hlkwb{<-} \hlstr{"Accent"}
+            \hlstd{\}}
+
+
+  \hlkwa{if}\hlstd{(}\hlkwd{is}\hlstd{(x}\hlopt{@}\hlkwc{components}\hlstd{[[}\hlnum{1}\hlstd{]][[}\hlnum{1}\hlstd{]],} \hlstr{"FLX_monoreg_component"}\hlstd{))\{} \hlcom{# check that this is a mixture of part_fits}
+    \hlcom{# assign appropriate names for graph labelling}
+    \hlkwa{if}\hlstd{(}\hlkwd{is.null}\hlstd{(} \hlkwd{c}\hlstd{(x}\hlopt{@}\hlkwc{model}\hlstd{[[}\hlnum{1}\hlstd{]]}\hlopt{@}\hlkwc{mon_inc_names}\hlstd{, x}\hlopt{@}\hlkwc{model}\hlstd{[[}\hlnum{1}\hlstd{]]}\hlopt{@}\hlkwc{mon_dec_names}\hlstd{) ))\{}
+      \hlstd{xnames} \hlkwb{<-} \hlkwd{sapply}\hlstd{(}\hlnum{1}\hlopt{:}\hlkwd{dim}\hlstd{(x}\hlopt{@}\hlkwc{components}\hlstd{[[}\hlnum{1}\hlstd{]][[}\hlnum{1}\hlstd{]]}\hlopt{@}\hlkwc{mon_obj}\hlstd{)[}\hlnum{2}\hlstd{],} \hlkwa{function}\hlstd{(}\hlkwc{x}\hlstd{)} \hlkwd{paste0}\hlstd{(}\hlstr{"X"}\hlstd{, x))}
+      \hlstd{mono_names} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlstr{"Y"}\hlstd{, xnames)}
+    \hlstd{\}}
+    \hlkwa{else}\hlstd{\{}
+      \hlstd{mono_names} \hlkwb{<-} \hlkwd{c}\hlstd{(x}\hlopt{@}\hlkwc{formula}\hlstd{[[}\hlnum{2}\hlstd{]],} \hlkwd{c}\hlstd{(x}\hlopt{@}\hlkwc{model}\hlstd{[[}\hlnum{1}\hlstd{]]}\hlopt{@}\hlkwc{mon_inc_names}\hlstd{, x}\hlopt{@}\hlkwc{model}\hlstd{[[}\hlnum{1}\hlstd{]]}\hlopt{@}\hlkwc{mon_dec_names}\hlstd{))}
+    \hlstd{\}}
+
+            \hlcom{# get dimension of monotone components by reading columns of fitted_pava object}
+            \hlkwa{if}\hlstd{(}\hlkwd{dim}\hlstd{( x}\hlopt{@}\hlkwc{components}\hlstd{[[}\hlnum{1}\hlstd{]][[}\hlnum{1}\hlstd{]]}\hlopt{@}\hlkwc{mon_obj} \hlstd{)[}\hlnum{2}\hlstd{]} \hlopt{>} \hlnum{1}\hlstd{)\{}
+              \hlstd{np} \hlkwb{<-} \hlkwd{list}\hlstd{()}
+              \hlkwa{for}\hlstd{(i} \hlkwa{in} \hlnum{1}\hlopt{:}\hlkwd{dim}\hlstd{( x}\hlopt{@}\hlkwc{components}\hlstd{[[}\hlnum{1}\hlstd{]][[}\hlnum{1}\hlstd{]]}\hlopt{@}\hlkwc{mon_obj} \hlstd{)[}\hlnum{2}\hlstd{])\{}
+                \hlstd{holder} \hlkwb{<-} \hlkwd{ggplot}\hlstd{()}
+
+                \hlkwa{if}\hlstd{(}\hlkwd{length}\hlstd{(x}\hlopt{@}\hlkwc{components}\hlstd{)} \hlopt{==} \hlnum{1}\hlstd{)\{}
+                    \hlstd{holder} \hlkwb{<-} \hlstd{holder} \hlopt{+}
+                      \hlkwd{geom_line}\hlstd{(}\hlkwd{aes}\hlstd{(}\hlkwc{x} \hlstd{= x}\hlopt{@}\hlkwc{components}\hlstd{[[}\hlnum{1}\hlstd{]][[}\hlnum{1}\hlstd{]]}\hlopt{@}\hlkwc{mon_obj}\hlstd{[,i]}\hlopt{$}\hlstd{x,}
+                                \hlkwc{y} \hlstd{= x}\hlopt{@}\hlkwc{components}\hlstd{[[}\hlnum{1}\hlstd{]][[}\hlnum{1}\hlstd{]]}\hlopt{@}\hlkwc{mon_obj}\hlstd{[,i]}\hlopt{$}\hlstd{yf))} \hlopt{+}
+                      \hlkwd{theme_bw}\hlstd{()} \hlopt{+}
+                      \hlkwd{labs}\hlstd{(}\hlkwc{title} \hlstd{=} \hlkwd{paste}\hlstd{(}\hlkwd{append_suffix}\hlstd{(i),} \hlstr{" Monotone Regression"}\hlstd{),}
+                       \hlkwc{x} \hlstd{= mono_names[i}\hlopt{+}\hlnum{1}\hlstd{],}
+                       \hlkwc{y} \hlstd{= mono_names[}\hlnum{1}\hlstd{])}
+                    \hlstd{\}}
+
+                \hlkwa{if}\hlstd{(}\hlkwd{length}\hlstd{(x}\hlopt{@}\hlkwc{components}\hlstd{)} \hlopt{>} \hlnum{1}\hlstd{)\{}
+
+                  \hlstd{monlist} \hlkwb{<-} \hlkwd{list}\hlstd{()}
+                  \hlkwa{for}\hlstd{(b} \hlkwa{in} \hlnum{1}\hlopt{:}\hlkwd{length}\hlstd{(x}\hlopt{@}\hlkwc{components}\hlstd{))\{}
+                    \hlstd{monlist[[b]]} \hlkwb{<-} \hlkwd{data.frame}\hlstd{(}\hlkwc{x} \hlstd{= x}\hlopt{@}\hlkwc{components}\hlstd{[[b]][[}\hlnum{1}\hlstd{]]}\hlopt{@}\hlkwc{mon_obj}\hlstd{[,i]}\hlopt{$}\hlstd{x,}
+                                               \hlkwc{yf} \hlstd{= x}\hlopt{@}\hlkwc{components}\hlstd{[[b]][[}\hlnum{1}\hlstd{]]}\hlopt{@}\hlkwc{mon_obj}\hlstd{[,i]}\hlopt{$}\hlstd{yf)}
+                  \hlstd{\}}
+
+                  \hlstd{mondf}   \hlkwb{<-} \hlkwd{cbind}\hlstd{(}\hlkwc{Cluster}\hlstd{=}\hlkwd{rep}\hlstd{(}\hlnum{1}\hlopt{:}\hlkwd{length}\hlstd{(x}\hlopt{@}\hlkwc{components}\hlstd{),}
+                                               \hlkwd{sapply}\hlstd{(monlist,nrow)),}\hlkwd{do.call}\hlstd{(rbind,monlist))}
+                  \hlstd{mondf}\hlopt{$}\hlstd{Cluster} \hlkwb{<-} \hlkwd{as.factor}\hlstd{(mondf}\hlopt{$}\hlstd{Cluster)}
+
+                  \hlstd{holder} \hlkwb{<-} \hlstd{holder} \hlopt{+} \hlkwd{geom_line}\hlstd{(mondf,} \hlkwc{mapping} \hlstd{=} \hlkwd{aes}\hlstd{(x,yf,} \hlkwc{color}\hlstd{=Cluster))} \hlopt{+}
+                    \hlkwd{scale_color_brewer}\hlstd{(}\hlkwc{palette}\hlstd{=palet)} \hlopt{+}
+                    \hlkwd{theme_bw}\hlstd{()} \hlopt{+}
+                    \hlkwd{labs}\hlstd{(}\hlkwc{title} \hlstd{=} \hlkwd{paste}\hlstd{(}\hlkwd{append_suffix}\hlstd{(i),} \hlstr{" Monotone Regression"}\hlstd{),}
+                         \hlkwc{x} \hlstd{= mono_names[i}\hlopt{+}\hlnum{1}\hlstd{],}
+                         \hlkwc{y} \hlstd{= mono_names[}\hlnum{1}\hlstd{])}
+                \hlstd{\}}
+
+                \hlkwa{if}\hlstd{(}\hlopt{!}\hlkwd{is.null}\hlstd{(ylim))\{}
+                  \hlkwa{if}\hlstd{(}\hlkwd{length}\hlstd{(ylim)} \hlopt{!=} \hlkwd{dim}\hlstd{( x}\hlopt{@}\hlkwc{components}\hlstd{[[}\hlnum{1}\hlstd{]][[}\hlnum{1}\hlstd{]]}\hlopt{@}\hlkwc{mon_obj} \hlstd{)[}\hlnum{2}\hlstd{]} \hlopt{|}
+                     \hlkwd{length}\hlstd{(ylim[[}\hlnum{1}\hlstd{]])} \hlopt{!=} \hlnum{2} \hlstd{)\{}
+                    \hlkwd{stop}\hlstd{(}\hlstr{"If you pass a ylim argument, it must have as many element pairs 
+                         as the model has monotone components. Try formulating the argument
+                         as: ylim = list(c(i,j), c(i,j), ...)"}\hlstd{)\}}
+                  \hlstd{holder} \hlkwb{<-} \hlstd{holder} \hlopt{+} \hlkwd{ylim}\hlstd{(ylim[[i]])}
+                \hlstd{\}}
+                \hlkwa{if}\hlstd{(}\hlopt{!}\hlkwd{is.null}\hlstd{(xlim))\{}
+                  \hlkwa{if}\hlstd{(}\hlkwd{length}\hlstd{(xlim)} \hlopt{!=} \hlkwd{dim}\hlstd{( x}\hlopt{@}\hlkwc{components}\hlstd{[[}\hlnum{1}\hlstd{]][[}\hlnum{1}\hlstd{]]}\hlopt{@}\hlkwc{mon_obj} \hlstd{)[}\hlnum{2}\hlstd{]} \hlopt{|}
+                     \hlkwd{length}\hlstd{(xlim[[}\hlnum{1}\hlstd{]])} \hlopt{!=} \hlnum{2} \hlstd{)\{}
+                    \hlkwd{stop}\hlstd{(}\hlstr{"If you pass a xlim argument, it must have as many element pairs 
+                         as the model has monotone components. Try formulating the argument
+                         as: xlim = list(c(i,j), c(i,j), ...)"}\hlstd{)\}}
+                  \hlstd{holder} \hlkwb{<-} \hlstd{holder} \hlopt{+} \hlkwd{xlim}\hlstd{(xlim[[i]])}
+                \hlstd{\}}
+                \hlkwa{if}\hlstd{(}\hlopt{!}\hlkwd{is.null}\hlstd{(ylab))\{}
+                  \hlkwa{if}\hlstd{(}\hlkwd{length}\hlstd{(ylab)} \hlopt{!=} \hlkwd{dim}\hlstd{( x}\hlopt{@}\hlkwc{components}\hlstd{[[}\hlnum{1}\hlstd{]][[}\hlnum{1}\hlstd{]]}\hlopt{@}\hlkwc{mon_obj} \hlstd{)[}\hlnum{2}\hlstd{])\{}
+                    \hlkwd{stop}\hlstd{(}\hlstr{"If you pass a ylab argument, it must have as many elements 
+                         as the model has monotone components. Try formulating the argument
+                         as: ylab = c(\textbackslash{}"first\textbackslash{}",\textbackslash{}"second\textbackslash{}",...)"}\hlstd{)\}}
+                  \hlstd{holder} \hlkwb{<-} \hlstd{holder} \hlopt{+} \hlkwd{ylab}\hlstd{(ylab[[i]])}
+                \hlstd{\}}
+                \hlkwa{if}\hlstd{(}\hlopt{!}\hlkwd{is.null}\hlstd{(xlab))\{}
+                  \hlkwa{if}\hlstd{(}\hlkwd{length}\hlstd{(xlab)} \hlopt{!=} \hlkwd{dim}\hlstd{( x}\hlopt{@}\hlkwc{components}\hlstd{[[}\hlnum{1}\hlstd{]][[}\hlnum{1}\hlstd{]]}\hlopt{@}\hlkwc{mon_obj} \hlstd{)[}\hlnum{2}\hlstd{])\{}
+                    \hlkwd{stop}\hlstd{(}\hlstr{"If you pass a xlab argument, it must have as many elements 
+                         as the model has monotone components. Try formulating the argument
+                         as: xlab = c(\textbackslash{}"first\textbackslash{}",\textbackslash{}"second\textbackslash{}",...)"}\hlstd{)\}}
+                  \hlstd{holder} \hlkwb{<-} \hlstd{holder} \hlopt{+} \hlkwd{xlab}\hlstd{(xlab[[i]])}
+                \hlstd{\}}
+                \hlkwa{if}\hlstd{(}\hlopt{!}\hlkwd{is.null}\hlstd{(main))\{}
+                  \hlkwa{if}\hlstd{(}\hlkwd{length}\hlstd{(main)} \hlopt{!=} \hlkwd{dim}\hlstd{( x}\hlopt{@}\hlkwc{components}\hlstd{[[}\hlnum{1}\hlstd{]][[}\hlnum{1}\hlstd{]]}\hlopt{@}\hlkwc{mon_obj} \hlstd{)[}\hlnum{2}\hlstd{])\{}
+                    \hlkwd{stop}\hlstd{(}\hlstr{"If you pass a main argument, it must have as many elements 
+                         as the model has monotone components. Try formulating the argument
+                         as: main = c(\textbackslash{}"first\textbackslash{}",\textbackslash{}"second\textbackslash{}",...)"}\hlstd{)\}}
+                  \hlstd{holder} \hlkwb{<-} \hlstd{holder} \hlopt{+} \hlkwd{ggtitle}\hlstd{(main[[i]])}
+                \hlstd{\}}
+
+
+
+                \hlstd{np[[i]]} \hlkwb{<-} \hlstd{holder}
+              \hlstd{\}}
+              \hlcom{# return(grid.arrange(grobs=np, ncol=1))}
+              \hlcom{# return(grid.arrange(grobs=np, ncol=1))}
+            \hlstd{\}}
+            \hlkwa{else}\hlstd{\{}
+              \hlstd{np} \hlkwb{<-} \hlkwd{ggplot}\hlstd{()}
+
+              \hlkwa{if}\hlstd{(}\hlkwd{length}\hlstd{(x}\hlopt{@}\hlkwc{components}\hlstd{)} \hlopt{==} \hlnum{1}\hlstd{)\{}
+                \hlstd{np} \hlkwb{<-} \hlstd{np} \hlopt{+} \hlkwd{geom_line}\hlstd{(}\hlkwd{aes}\hlstd{(}\hlkwc{x} \hlstd{= x}\hlopt{@}\hlkwc{components}\hlstd{[[}\hlnum{1}\hlstd{]][[}\hlnum{1}\hlstd{]]}\hlopt{@}\hlkwc{mon_obj}\hlstd{[,}\hlnum{1}\hlstd{]}\hlopt{$}\hlstd{x,} \hlkwc{y} \hlstd{=}
+                                           \hlstd{x}\hlopt{@}\hlkwc{components}\hlstd{[[}\hlnum{1}\hlstd{]][[}\hlnum{1}\hlstd{]]}\hlopt{@}\hlkwc{mon_obj}\hlstd{[,}\hlnum{1}\hlstd{]}\hlopt{$}\hlstd{yf))} \hlopt{+}
+                  \hlkwd{theme_bw}\hlstd{()} \hlopt{+}
+                  \hlkwd{labs}\hlstd{(}\hlkwc{title} \hlstd{=} \hlstr{"Monotone Component"}\hlstd{,}
+                     \hlkwc{x} \hlstd{= mono_names[}\hlnum{2}\hlstd{],}
+                     \hlkwc{y} \hlstd{= mono_names[}\hlnum{1}\hlstd{])}
+                \hlstd{\}}
+
+              \hlkwa{if}\hlstd{(}\hlkwd{length}\hlstd{(x}\hlopt{@}\hlkwc{components}\hlstd{)} \hlopt{>} \hlnum{1}\hlstd{)\{}
+
+                \hlstd{monlist} \hlkwb{<-} \hlkwd{list}\hlstd{()}
+                \hlkwa{for}\hlstd{(b} \hlkwa{in} \hlnum{1}\hlopt{:}\hlkwd{length}\hlstd{(x}\hlopt{@}\hlkwc{components}\hlstd{))\{}
+                  \hlstd{monlist[[b]]} \hlkwb{<-} \hlkwd{data.frame}\hlstd{(}\hlkwc{x} \hlstd{= x}\hlopt{@}\hlkwc{components}\hlstd{[[b]][[}\hlnum{1}\hlstd{]]}\hlopt{@}\hlkwc{mon_obj}\hlstd{[,}\hlnum{1}\hlstd{]}\hlopt{$}\hlstd{x,}
+                                                   \hlkwc{yf} \hlstd{= x}\hlopt{@}\hlkwc{components}\hlstd{[[b]][[}\hlnum{1}\hlstd{]]}\hlopt{@}\hlkwc{mon_obj}\hlstd{[,}\hlnum{1}\hlstd{]}\hlopt{$}\hlstd{yf)}
+                \hlstd{\}}
+
+                \hlstd{mondf}   \hlkwb{<-} \hlkwd{cbind}\hlstd{(}\hlkwc{Cluster}\hlstd{=}\hlkwd{rep}\hlstd{(}\hlnum{1}\hlopt{:}\hlkwd{length}\hlstd{(x}\hlopt{@}\hlkwc{components}\hlstd{),}
+                                             \hlkwd{sapply}\hlstd{(monlist,nrow)),} \hlkwd{do.call}\hlstd{(rbind, monlist))}
+                \hlstd{mondf}\hlopt{$}\hlstd{Cluster} \hlkwb{<-} \hlkwd{as.factor}\hlstd{(mondf}\hlopt{$}\hlstd{Cluster)}
+
+                \hlstd{np} \hlkwb{<-} \hlstd{np} \hlopt{+} \hlkwd{geom_line}\hlstd{(mondf,} \hlkwc{mapping} \hlstd{=} \hlkwd{aes}\hlstd{(x,yf,} \hlkwc{color}\hlstd{=Cluster))} \hlopt{+}
+                  \hlkwd{scale_color_brewer}\hlstd{(}\hlkwc{palette}\hlstd{=palet)} \hlopt{+}
+                  \hlkwd{theme_bw}\hlstd{()} \hlopt{+}
+                  \hlkwd{labs}\hlstd{(}\hlkwc{title} \hlstd{=} \hlstr{"Monotone Component"}\hlstd{,}
+                       \hlkwc{x} \hlstd{= mono_names[}\hlnum{2}\hlstd{],}
+                       \hlkwc{y} \hlstd{= mono_names[}\hlnum{1}\hlstd{])}
+              \hlstd{\}}
+
+
+              \hlkwa{if}\hlstd{(}\hlopt{!}\hlkwd{is.null}\hlstd{(ylim))\{}
+                \hlstd{np} \hlkwb{<-} \hlstd{np} \hlopt{+} \hlkwd{ylim}\hlstd{(ylim)}
+              \hlstd{\}}
+              \hlkwa{if}\hlstd{(}\hlopt{!}\hlkwd{is.null}\hlstd{(xlim))\{}
+                \hlstd{np} \hlkwb{<-} \hlstd{np} \hlopt{+} \hlkwd{xlim}\hlstd{(xlim)}
+              \hlstd{\}}
+              \hlkwa{if}\hlstd{(}\hlopt{!}\hlkwd{is.null}\hlstd{(ylab))\{}
+                \hlstd{np} \hlkwb{<-} \hlstd{np} \hlopt{+} \hlkwd{ylab}\hlstd{(ylab)}
+              \hlstd{\}}
+              \hlkwa{if}\hlstd{(}\hlopt{!}\hlkwd{is.null}\hlstd{(xlab))\{}
+                \hlstd{np} \hlkwb{<-} \hlstd{np} \hlopt{+} \hlkwd{xlab}\hlstd{(xlab)}
+              \hlstd{\}}
+              \hlkwa{if}\hlstd{(}\hlopt{!}\hlkwd{is.null}\hlstd{(main))\{}
+                \hlstd{np} \hlkwb{<-} \hlstd{np} \hlopt{+} \hlkwd{ggtitle}\hlstd{(main)}
+              \hlstd{\}}
+
+
+
+
+              \hlcom{# return(np)}
+            \hlstd{\}}
+  \hlstd{\}}
+            \hlcom{# plot and append rootogram}
+            \hlstd{post} \hlkwb{<-} \hlkwd{data.frame}\hlstd{(x}\hlopt{@}\hlkwc{posterior}\hlopt{$}\hlstd{scaled)} \hlcom{# collect posteriors}
+            \hlkwd{names}\hlstd{(post)} \hlkwb{<-} \hlnum{1}\hlopt{:}\hlkwd{dim}\hlstd{(post)[}\hlnum{2}\hlstd{]} \hlcom{# change columns of posteriors to cluster numbers}
+            \hlstd{post} \hlkwb{<-} \hlkwd{melt}\hlstd{(}\hlkwd{setDT}\hlstd{(post),} \hlkwc{measure.vars} \hlstd{=} \hlkwd{c}\hlstd{(}\hlnum{1}\hlopt{:}\hlkwd{dim}\hlstd{(post)[}\hlnum{2}\hlstd{]),} \hlkwc{variable.name} \hlstd{=} \hlstr{"Cluster"}\hlstd{)}
+            \hlstd{rg} \hlkwb{<-} \hlkwd{ggplot}\hlstd{(post,} \hlkwd{aes}\hlstd{(}\hlkwc{x}\hlstd{=value,} \hlkwc{fill}\hlstd{=Cluster))} \hlopt{+} \hlcom{# plot rootogram, with color indicating cluster}
+              \hlkwd{geom_histogram}\hlstd{(}\hlkwc{binwidth} \hlstd{=} \hlnum{0.05}\hlstd{)} \hlopt{+}
+              \hlkwd{scale_fill_brewer}\hlstd{(}\hlkwc{palette}\hlstd{=palet)} \hlopt{+}
+              \hlkwd{theme_bw}\hlstd{()} \hlopt{+}
+              \hlkwd{labs}\hlstd{(}\hlkwc{title} \hlstd{=} \hlstr{"Rootogram"}\hlstd{,}
+                   \hlkwc{x} \hlstd{=} \hlstr{"Posteriors"}\hlstd{,}
+                   \hlkwc{y} \hlstd{=} \hlstr{"Count"}\hlstd{)}
+
+            \hlkwa{if}\hlstd{(root_scale} \hlopt{==} \hlstr{"sqrt"}\hlstd{)\{rg} \hlkwb{<-} \hlstd{rg} \hlopt{+}
+              \hlkwd{scale_y_sqrt}\hlstd{()} \hlopt{+}
+              \hlkwd{labs}\hlstd{(}\hlkwc{title} \hlstd{=} \hlstr{"Rootogram (square root scale)"}\hlstd{,}
+                   \hlkwc{x} \hlstd{=} \hlstr{"Posteriors"}\hlstd{,}
+                   \hlkwc{y} \hlstd{=} \hlstr{"Count (square root)"}\hlstd{)\}}
+            \hlkwa{if}\hlstd{(root_scale} \hlopt{==} \hlstr{"log"}\hlstd{)\{rg} \hlkwb{<-} \hlstd{rg} \hlopt{+}
+              \hlkwd{scale_y_log10}\hlstd{()} \hlopt{+}
+              \hlkwd{labs}\hlstd{(}\hlkwc{title} \hlstd{=} \hlstr{"Rootogram (log scale)"}\hlstd{,}
+                   \hlkwc{x} \hlstd{=} \hlstr{"Posteriors"}\hlstd{,}
+                   \hlkwc{y} \hlstd{=} \hlstr{"Count (log)"}\hlstd{)\}}
+
+            \hlkwa{if}\hlstd{(}\hlopt{!}\hlkwd{is.null}\hlstd{(subplot))\{}
+              \hlkwd{return}\hlstd{(}\hlkwd{list}\hlstd{(rg, np)[[subplot[}\hlnum{1}\hlstd{]]])}
+            \hlstd{\}}
+            \hlkwa{else}\hlstd{\{}
+              \hlkwd{multiplot}\hlstd{(rg, np)}
+            \hlstd{\}}
+          \hlstd{\}}
+\hlstd{)}
+
+
+
+
+\hlstd{internal_boot} \hlkwb{<-} \hlkwa{function}\hlstd{(}\hlkwc{fm}\hlstd{,} \hlkwc{R}\hlstd{=}\hlnum{100}\hlstd{)\{}
+
+  \hlcom{# Check that fm is a flexmix object}
+  \hlkwa{if}\hlstd{(}\hlopt{!}\hlkwd{is}\hlstd{(fm,} \hlstr{"flexmix"}\hlstd{))} \hlkwd{stop}\hlstd{(}\hlstr{"This method is for FlexMix objects of type: partially linear monotonic regression."}\hlstd{)}
+
+  \hlcom{# Check that fm has at least one monotone obj}
+  \hlkwa{if}\hlstd{(}\hlopt{!}\hlstr{"mon_obj"} \hlopt{%in%} \hlkwd{names}\hlstd{(}\hlkwd{attributes}\hlstd{(fm}\hlopt{@}\hlkwc{components}\hlstd{[[}\hlnum{1}\hlstd{]][[}\hlnum{1}\hlstd{]])))} \hlkwd{stop}\hlstd{(}\hlstr{"This method is for FlexMix objects of type: partially linear monotonic regression."}\hlstd{)}
+
+  \hlstd{Y} \hlkwb{<-} \hlstd{fm}\hlopt{@}\hlkwc{model}\hlstd{[[}\hlnum{1}\hlstd{]]}\hlopt{@}\hlkwc{y} \hlcom{# store independent data}
+  \hlstd{dat} \hlkwb{<-} \hlstd{fm}\hlopt{@}\hlkwc{model}\hlstd{[[}\hlnum{1}\hlstd{]]}\hlopt{@}\hlkwc{x} \hlcom{# store dependent data}
+  \hlkwa{if}\hlstd{(}\hlstr{"(Intercept)"} \hlopt{%in%} \hlkwd{colnames}\hlstd{(fm}\hlopt{@}\hlkwc{model}\hlstd{[[}\hlnum{1}\hlstd{]]}\hlopt{@}\hlkwc{x}\hlstd{))\{}
+    \hlstd{x} \hlkwb{<-} \hlstd{x[,} \hlkwd{colnames}\hlstd{(m3}\hlopt{@}\hlkwc{model}\hlstd{[[}\hlnum{1}\hlstd{]]}\hlopt{@}\hlkwc{x}\hlstd{)} \hlopt{%in%} \hlstr{"(Intercept)"}\hlstd{]} \hlcom{# remove intercept}
+  \hlstd{\}}
+
+  \hlstd{k} \hlkwb{<-} \hlkwd{length}\hlstd{(m2}\hlopt{@}\hlkwc{components}\hlstd{)} \hlcom{# Store the number of components}
+  \hlstd{coefs} \hlkwb{<-} \hlkwd{rep}\hlstd{(}\hlkwd{list}\hlstd{(),k)}
+  \hlstd{sigmas} \hlkwb{<-} \hlkwd{matrix}\hlstd{(}\hlkwc{ncol} \hlstd{= k,} \hlkwc{nrow} \hlstd{= R)}
+  \hlstd{mon_fits} \hlkwb{<-} \hlkwd{rep}\hlstd{(}\hlkwd{list}\hlstd{(}\hlkwd{rep}\hlstd{(}\hlnum{NA}\hlstd{, R)),k)}
+
+  \hlkwa{for}\hlstd{(i} \hlkwa{in} \hlnum{1}\hlopt{:}\hlstd{k)\{} \hlcom{# populate each parameter}
+    \hlstd{iter} \hlkwb{<-} \hlnum{1}
+    \hlkwa{while}\hlstd{(iter} \hlopt{<} \hlstd{R )\{}
+      \hlcom{# TODO give part_fit an optional formula argument}
+      \hlcom{# TODO give part_fit a starting coef and g() argument}
+      \hlstd{current} \hlkwb{<-} \hlkwd{part_fit}\hlstd{(}\hlkwc{formula} \hlstd{= fm}\hlopt{@}\hlkwc{model}\hlstd{[[}\hlnum{1}\hlstd{]]}\hlopt{@}\hlkwc{fullformula}\hlstd{,} \hlkwc{start} \hlstd{= fm}\hlopt{@}\hlkwc{components}\hlstd{[[i]][[}\hlnum{1}\hlstd{]])}
+
+      \hlstd{coefs[[i]][[iter]]} \hlkwb{<-} \hlstd{current}\hlopt{$}\hlstd{coef}
+      \hlstd{sigmas[iter, i]} \hlkwb{<-} \hlstd{current}\hlopt{$}\hlstd{sigma}
+      \hlstd{mon_fits[[i]][[iter]]} \hlkwb{<-}\hlstd{current}\hlopt{$}\hlstd{fitted_pava}
+
+      \hlcom{# assign }
+      \hlstd{iter} \hlkwb{<-} \hlstd{iter} \hlopt{+} \hlnum{1}
+    \hlstd{\}}
+
+  \hlstd{\}}
+
+
+\hlstd{\}}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+\end{appendices}
 
 \end{document}

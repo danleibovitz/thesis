@@ -1,10 +1,54 @@
 \begin{thebibliography}{}
 
-\bibitem[Lees-Miller et~al., 2010]{lees2010theoretical}
-Lees-Miller, J., Hammersley, J., and Wilson, R. (2010).
-\newblock Theoretical maximum capacity as benchmark for empty vehicle
-  redistribution in personal rapid transit.
-\newblock {\em Transportation Research Record: Journal of the Transportation
-  Research Board}, (2146):76--83.
+\bibitem[Cai and Dunson, 2007]{carcinogen}
+Cai, B. and Dunson, D.~B. (2007).
+\newblock Bayesian multivariate isotonic regression splines: Applications to
+  carcinogenicity studies.
+\newblock {\em Journal of the American Statistical Association},
+  102:1158--1171.
+
+\bibitem[Cheng and Lin, 1981]{cheng}
+Cheng, K.-F. and Lin, P.-E. (1981).
+\newblock Nonparametric estimation of a regression function: Limiting
+  distribution2.
+\newblock {\em Australian Journal of Statistics}, 23(2):186--195.
+
+\bibitem[Friedman and Tibshirani, 1984]{friedman}
+Friedman, J. and Tibshirani, R. (1984).
+\newblock The monotone smoothing of scatterplots.
+\newblock {\em Technometrics}, 26(3):243--250.
+
+\bibitem[Jordan et~al., 2019]{jordan}
+Jordan, A., Mühlemann, A., and Ziegel, J. (2019).
+\newblock Optimal solutions to the isotonic regression problem.
+
+\bibitem[Mammen, 1991]{mammen}
+Mammen, E. (1991).
+\newblock {Estimating a Smooth Monotone Regression Function}.
+\newblock {\em The Annals of Statistics}, 19(2):724 -- 740.
+
+\bibitem[Morton-Jones et~al., 2000]{morton}
+Morton-Jones, T., Diggle, P., Parker, L., Dickinson, H.~O., and Binks, K.
+  (2000).
+\newblock Additive isotonic regression models in epidemiology.
+\newblock {\em Statistics in Medicine}, 19(6):849--859.
+
+\bibitem[Oussalah et~al., 2020]{kinetics}
+Oussalah, A., Gleye, S., clerc urmès, I., Laugel, E., Barbé, F., Orlowski,
+  S., Malaplate, C., Aimone-Gastin, I., Caillierez, B., Merten, M., Jeannesson,
+  E., Kormann, R., Olivier, J.-L., Rodriguez-Guéant, R.-M., Namour, F.,
+  Bevilacqua, S., Thilly, N., Losser, M.-R., Kimmoun, A., and Guéant, J.-L.
+  (2020).
+\newblock The spectrum of biochemical alterations associated with organ
+  dysfunction and inflammatory status and their association with disease
+  outcomes in severe covid-19: A longitudinal cohort and time-series design
+  study.
+\newblock {\em EClinicalMedicine}, 27:100554.
+
+\bibitem[Zhang and Zheng, 2018]{zhangetal}
+Zhang, Y. and Zheng, Q. (2018).
+\newblock Non parametric mixture of strictly monotone regression models.
+\newblock {\em Communications in Statistics - Theory and Methods},
+  47(2):415--426.
 
 \end{thebibliography}
