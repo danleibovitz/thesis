@@ -57,13 +57,53 @@
 \usepackage{caption}
 \usepackage{bm}
 \usepackage{courier}
+\usepackage{float}
+
+% \usepackage{listings}
+% \usepackage{inconsolata}
 \usepackage[toc,page]{appendix}
 %\usepackage[nogin]{Sweave}
 \usepackage[ruled,vlined,linesnumbered]{algorithm2e}
-
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=false,
+    citebordercolor=green,
+    linkbordercolor=white
+}
+% %-----------------
+% %Define the colors you want to use
+% 
+% \definecolor{keywordcolor}{rgb}{0,0.6,0.6}
+% \definecolor{delimcolor}{rgb}{0.461,0.039,0.102}
+% \definecolor{Rcommentcolor}{rgb}{0.101,0.043,0.432}
+% %-----------------
+% %Set up your listings. You can type `texdoc listings` in your terminal
+% 
+% \lstdefinestyle{Rsettings}{
+%   language=R,
+%   basicstyle=\ttfamily,
+%   breaklines=true,
+%   showstringspaces=false,
+%   keywords={if, else, function, theFunction, tmp},
+%   otherkeywords={},
+%   commentstyle=\itshape\color{Rcommentcolor},
+%   keywordstyle=\color{keywordcolor},
+%   moredelim=[s][\color{delimcolor}]{"}{"},
+% }
 
 
 \setlength{\parskip}{1em}
+
+% <opt, echo=FALSE>
+%   options(width=60)
+% 
+%   listing <- function(x, options) {
+%     paste("\\begin{lstlisting}[style=Rsettings]\n",
+%       x, "\\end{lstlisting}\n", sep = "")
+%   }
+%   knit_hooks$set(source=listing, output=listing)
+% @
+
 
 % import libraries, code, and data
 
@@ -77,14 +117,14 @@
 \title{Mixtures of Partially Linear Models with Monotone Shape Constraints}
 
 \author[1]{Daniel Leibovitz}
-\author[2]{Matthias Loffler}
+\author[2]{Matthias L{\"o}ffler}
 \affil[1]{daniel.leibovitz@uzh.ch}
 \affil[2]{matthias.loeffler@stat.math.ethz.ch}
 
 \keywords{Mixture Models, Shape Constraints, Isotonic Regression}
 
 \begin{abstract}
-Mixtures of non-parametric monotone regressions are readily applicable to clustering problems where there is prior knowledge about appropriate shape constraints within the resulting model. For example, option pricing functions in finance and risk-exposure relationships in epidemiology are both \emph{a priori} monotonic. The current standard for estimating such models involves fitting a series of non-parametric regression functions without shape constraints using an EM algorithm, as described by \cite{zhangetal}, followed by a monotonic estimate given the resulting latent variable classifications. In this paper, we propose to remove redundancy by incorporating the non-parametric monotone regression function estimate into the M-step of the EM algorithm. We demonstrate the effectiveness of the algorithm when applied to both simulated data and real-world data on global life expectancy and GDP from the World Bank.
+Mixtures of non-parametric monotone regressions are applicable to clustering problems where there is prior knowledge about appropriate shape constraints within the resulting model. For example, option pricing functions in finance and risk-exposure relationships in epidemiology are both \emph{a priori} monotonic. The current standard for estimating such models involves fitting a series of non-parametric regression functions without shape constraints using an EM algorithm, as described by \cite{zhangetal}, followed by a monotonic estimate given the resulting latent variable classifications. In this paper, we propose to remove redundancy by incorporating the non-parametric monotone regression function estimate into the M-step of the EM algorithm. We demonstrate the effectiveness of the algorithm when applied to both simulated data and real-world data on global life expectancy and GDP from the World Bank.
 \end{abstract}
 \IfFileExists{upquote.sty}{\usepackage{upquote}}{}
 \begin{document}
@@ -96,7 +136,7 @@ Mixtures of non-parametric monotone regressions are readily applicable to cluste
 
 \section{Introduction}
 
-The mixture of partially linear regressions with monotone shape constraints takes the following form:
+A mixture of partially linear regressions with monotone shape constraints takes the following form:
 
 \begin{equation} \label{modstrucbrief}
   Y = 
@@ -107,9 +147,9 @@ The mixture of partially linear regressions with monotone shape constraints take
   \end{dcases}
 \end{equation}
 
-where the model has $K$ components, $\boldsymbol{X} \in \mathbb{R}^p$, $\boldsymbol{Z} \in \mathbb{R}^p$, $\beta \in \mathbb{R}^p$, and each function $g_{hk}()$ is assumed monotone. The error $\epsilon$ is assumed to be normally distributed with mean $0$ and to be independent of the covariates $(\boldsymbol{X}, \boldsymbol{Z})$. The prior probabilities $\pi_k$ satisfy the conditions $\pi_k \in (0,1)$ and $\sum_{1}^{k} \pi_k = 1$.
+where the model has $K$ components, $\boldsymbol{X} \in \mathbb{R}^q$, $\boldsymbol{Z} \in \mathbb{R}^p$, $\beta \in \mathbb{R}^q$, and each function $g_{hk}()$ is assumed monotone. The error $\epsilon$ is assumed to be Gaussian distributed with mean zero and to be independent of the covariates $(\boldsymbol{X}, \boldsymbol{Z})$. The prior probabilities $\pi_k$ satisfy the conditions $\pi_k \in (0,1)$ and $\sum_{1}^{k} \pi_k = 1$.
 
-Such a model has broad applications for clustering of data in domains where monotone relationships are known \emph{a priori}. These domains include, for example, epidemiology, where risk-exposure relationships may be modeled monotonically (\cite{morton}, \cite{carcinogen}); finance, where option pricing functions may be restricted to both monotonicity and ANDOR or convexity (\cite{optionpricing}); biomedical research, where biochemical kinetics may be monotone over time (\cite{kinetics}). 
+Such a model has broad applications for clustering of data in domains where monotone relationships are known \emph{a priori}. These domains include, for example, epidemiology, where risk-exposure relationships may be modeled monotonically (\cite{morton}, \cite{carcinogen}); finance, where option pricing functions may be restricted to both monotonicity and and/or or convexity (\cite{optionpricing}); and biomedical research, where biochemical kinetics may be monotone over time (\cite{kinetics}). 
 
 
 A similar type of model has previously been described by \cite{zhangetal}, and takes the following form for a $k$-component mixture:
@@ -123,9 +163,9 @@ A similar type of model has previously been described by \cite{zhangetal}, and t
   \end{dcases}
 \end{equation}
 
-where $\boldsymbol{Z} \in \mathbb{R}^1$, and each function $g_{k}()$ is assumed monotone. The variables $\epsilon_k$ and $\pi_k$ are not constant, as in model \ref{modstrucbrief}, but rather nonparametric functions $\epsilon_k(Z)$ and $\pi_k(Z)$. They nonetheless satisfy the same conditions as in model \ref{modstrucbrief}, namely, $\pi_k(Z) \in (0,1)$ and $\sum_{1}^{k} \pi_k(Z) = 1$ for any $Z$, and $\epsilon_k(Z)$ is normally distributed with $E(\epsilon_k | Z) = 0$, $Var(\epsilon_k | Z) = \sigma_k(Z)$. 
+where $\boldsymbol{Z} \in \mathbb{R}^1$, and each function $g_{k}()$ is assumed monotone. The variables $\epsilon_k$ and $\pi_k$ are not constant, as in model \ref{modstrucbrief}, but are modelled as nonparametric functions $\epsilon_k(Z)$ and $\pi_k(Z)$. They nonetheless satisfy the same conditions as in model \ref{modstrucbrief}, namely, $\pi_k(Z) \in (0,1)$ and $\sum_{1}^{k} \pi_k(Z) = 1$ for any $Z$, and $\epsilon_k(Z)$ is Gaussian distributed with $E(\epsilon_k | Z) = 0$ and $Var(\epsilon_k | Z) = \sigma_k(Z)$. 
 
-We have identified four drawbacks of in the model and estimator of Zhang et al.:
+The model and estimator of Zhang et al.:
 
 \begin{enumerate}[noitemsep] 
   \item The model proposed by Zhang et al. cannot be generalized to a semiparametric approach, i.e., one cannot include linear effects in the mixture components. Being able to include linear effects in the mixture components is conducive to two distinct purposes: 
@@ -134,13 +174,11 @@ We have identified four drawbacks of in the model and estimator of Zhang et al.:
       \item Second, users who are mainly concerned with linear effects of components within a mixture model can flexibly control for one or more nuisance variables that are suspected of being monotone in effect.
     \end{enumerate}
   \item The Zhang et al. estimator fits mixture components in two, sequential steps, first fitting an unconstrained function and then applying monotone constraints once the components membership has been calculated. This approach introduces a potential bias when components are not clearly identifiable.
-  \item The Zhang et al. estimator requires a tuning parameter for the fitting of each unconstrained mixture component function, which adds computational complexity.
-  \item Zhang et al. state that their model can be extended to the multivariate case, i.e., where $Z$ in model \ref{zhangstruc} is multivariate, but decline to explicitly define this model or its estimation.
+  \item The Zhang et al. estimator requires a tuning parameter for the fitting of each unconstrained mixture component function, which is difficult in practice and adds computational complexity.
+  % \item Zhang et al. state that their model can be extended to the multivariate case, i.e., where $Z$ in model \ref{zhangstruc} is multivariate, but decline to explicitly define this model or its estimation.
 \end{enumerate}
 
 We propose model \ref{modstrucbrief} as an alternative, more generalized form of the approach suggested by Zhang et al. that avoids the drawbacks mentioned above. Specifically, our model accepts any number of non-parametric monotone or linear effects within each mixture component; it fits the monotone functions within each component in a single step; and it does not require the calibration of any tuning parameters.
-
-The main weakness of our generalized model is that the monotone component of each regression is not a smooth function, as is the case in the approach by Zhang et al., but rather a step-wise function. However, if the user does not require smooth monotone functions, the advantages of the algorithm we propose may outweigh this cost.
 
 The remainder of this paper is organized as follows. In Section 2, we discuss previous research in the domains of mixture models, partial linear models, and isotonic regression. In Section 3, we discuss the components of the proposed model. In Section 4, we describe the theoretical structure of the proposed model (\ref{modstrucbrief}) as well as the estimation algorithm, followed by the model's asymptotic properties and empirical complexity. In Section 5, we apply the proposed model to simulated data as well as World Bank data on global life expectancy through the end of the 20\textsuperscript{th} century. In the final section, we discuss implications and future work.
 
@@ -151,15 +189,15 @@ The model proposed in this article draws from several branches of statistical re
 
 \subsection{Regression with shape constraints}
 
-Parametric regression models are constrained in their shape by construction. They can be further constrained, often trivially, by estimating their shape within a limited parameter space. A univariate linear model $E(Y) = X\beta$ in $\mathbb{R}^1$, for example, can be constrained to be non-decreasing by estimating $\hat{\beta}$ to be non-negative, i.e., $\hat{\beta} \in [0,+\infty)$. When estimating nonparametric regressions, this triviality is lost and one must reconsider how to estimate constrained functions. The resulting estimators are often applications of classical techniques such as maximum likelihood, and are often free of tuning parameters, making them attractive alternatives to typical, unconstrained nonparametric estimators (\cite{guntu}).
+Parametric regression models are constrained in their shape by construction. They can be further constrained, often trivially, by estimating their shape within a limited parameter space. A univariate linear model $E(Y) = X\beta$, for example, can be constrained to be non-decreasing by estimating $\hat{\beta}$ to be non-negative, i.e., $\hat{\beta} \in [0,+\infty)$. When estimating nonparametric regressions, this triviality is lost and one must reconsider how to estimate constrained functions. The resulting estimators are often applications of classical techniques such as maximum likelihood, and are often free of tuning parameters, making them attractive alternatives to typical, unconstrained nonparametric estimators (\cite{guntu}).
 
-Several types of constraint have been considered over the years. Frisen described unimodal regression, i.e., the case where for $E(Y) = f(X)$, $f()$ has a unique local maximum or local minimum (\cite{unimodal}). Convex/concave regression, where intuitively, in the unidimensional case, the first derivatives of the estimated functions are non-decreasing/non-increasing respectively, was first given a least-squares point estimate by \cite{hildreth}. The Hildreth estimate was later proved to be consistent by \cite{hanson}, while its rate of convergence was established by \cite{mammenconvex}. More recently, convex estimation has been considered by \cite{seijo}, \cite{mazumder}, \cite{kuosmanen}, and \cite{groeneboom}.
+Several types of constraint have been considered over the years. Frisen described unimodal regression, i.e., the case where for $E(Y) = f(X)$, $f()$ has a unique local maximum or local minimum (\cite{unimodal}). Convex/concave regression, where the first derivatives of the estimated functions are non-decreasing/non-increasing respectively, was first given a least-squares point estimate by \cite{hildreth}. The Hildreth estimate was later proved to be consistent by \cite{hanson}, while its rate of convergence was established by \cite{mammenconvex}. More recently, convex estimation has been considered by \cite{seijo}, \cite{mazumder}, \cite{kuosmanen}, and \cite{groeneboom}.
 
-Isotonic, or monotone, regression and its variants have received the most attention in the statistical literature, perhaps due to their continuing relevance. Monotone regressions have seen diverse applications across research domains; They have been used by \cite{jianhua} to analyze dose-response in bioinformatics, by \cite{luss} to estimate gene-gene interactions, and by \cite{diggle} to estimate disease risk as functions of spatial exposure, to name just a few examples. 
+Isotonic, or monotone, regression and its variants have received the most attention in the statistical literature, perhaps due to their continuing relevance. Monotone regression can be defined most simply as a mapping $f: x \rightarrow y$ where $f$ is non-decreasing or non-increasing over the range of $x$. Monotone regressions have seen diverse applications across research domains; They have been used by \cite{jianhua} to analyze dose-response in bioinformatics, by \cite{luss} to estimate gene-gene interactions, and by \cite{diggle} to estimate disease risk as functions of spatial exposure, to name just a few examples. 
 
-Isotonic regression maximum likelihood estimators with no smoothness requirements were first explored by \cite{brunk} and \cite{grenander}. The asymptotic distribution of these estimators was later established by \cite{wright}. The original Pool Adjacent Violators algorithm for the estimation of the isotonic regression MLE with normally distributed errors was first suggested by \cite{ayer}.
+Isotonic regression maximum likelihood estimators with no smoothness requirements were first explored by \cite{brunk} and \cite{grenander}. The asymptotic distribution of these estimators was later established by \cite{wright}. The Pool Adjacent Violators algorithm for the estimation of the isotonic regression MLE with Gaussian distributed errors was first suggested by \cite{ayer}.
 
-The literature regarding isotonic regression diverges at the point of choosing an estimator based on the crucial assumption of whether the resulting function is smooth or step-wise. For applications in which a step-wise function is acceptable, the estimators of Brunk, Grenander, Ayer, etc., have an exact solution and no tuning parameter. However, for applications in which a smooth function is required, alernate approaches have had to be developed, and a two-step procedure has become common. These two-step procedures either estimate a smooth function and apply a monotonic constraint on the resulting function (e.g., Friedman \& Tibshirani (\cite{friedman})), or estimate a monotonic function and then smooth the resulting estimate (e.g., Cheng \& Lin (\cite{cheng})). Mammen compares the asymptotic behaviours of these approaches in a comprehensive treatment of smooth, monotonic nonparametric regression. Although these procedures differ in their asymptotic behaviours, all of them require the selection of a tuning parameter (\cite{mammen}).
+The literature regarding isotonic regression diverges at the point of choosing an estimator based on the crucial assumption of whether the resulting function is smooth. For applications in which a step-wise function is acceptable, the estimators of Brunk, Grenander, Ayer, etc., have an exact solution and no tuning parameter. However, for applications in which a smooth function is required, alernate approaches have had to be developed, and a two-step procedure has become common. These two-step procedures either estimate a smooth function and apply a monotonic constraint on the resulting function (\cite{friedman}), or estimate a monotonic function and then smooth the resulting estimate (\cite{cheng}). Mammen compares the asymptotic behaviours of these approaches in a comprehensive treatment of smooth, monotonic nonparametric regression. Although these procedures differ in their asymptotic behaviours, all of them require the selection of a tuning parameter (\cite{mammen}).
 
 % discuss history, estimation methods (splines, inversion,), variance bounds.
 
@@ -170,21 +208,22 @@ The literature regarding isotonic regression diverges at the point of choosing a
 
 \subsection{Partial Linear Models}
 
-The Generalized Additive Model, or GAM, was first suggested by \cite{hastiegam}, and can be seen both as a generalization of the GLM to include nonparametric terms, and as a generalization of additive models to models with error terms from the exponential family. GAMs provide a large amount of flexibility to the nonparametric modeling of multivariate data, but avoid the slow convergence -- the curse of dimensionality -- associated with multivariate non-parametrics by imposing an additive structure between terms. 
+The Generalized Additive Model, or GAM (see equation \ref{gameq}), was first suggested by \cite{hastiegam}, and can be seen both as a generalization of the GLM to include nonparametric terms, and as a generalization of additive models to models with error terms from the exponential family. GAMs provide a large amount of flexibility to the nonparametric modeling of multivariate data, but avoid the slow convergence -- the curse of dimensionality -- associated with multivariate non-parametrics by imposing an additive structure between terms. 
+\begin{equation} \label{gameq}
+  g(E(X)) \ =\ \beta_0 + \sum_{i=1} f_i(x_i)
+\end{equation}
 
 Partial Linear Models, or PLMs, predate GAMs by several years, having been introduced in 1986 by \cite{engle} for the modelling of weather and energy-use. PLMs can nonetheless be considered more productively as a slightly more restrictive subset of GAMs, wherein some proportion of the model terms are required to be linear.
 
-Both GAMs and PLMs have often been fit using the ``backfitting'' algorithm, first introduced by \cite{backfit} and used in the first descriptions of GAMs by Tibshirani and Hastie.
+Both GAMs and PLMs have often been fit using the ``backfitting'' algorithm, first introduced by \cite{backfit} and used in the first descriptions of GAMs by Tibshirani and Hastie, though several alternatives have been developed over the years. Notably, Speckman introduced the profile least-squares estimator in 1988 \cite{speckman}; Hua proposed the penalized spline estimator \cite{hua}; and Hamilton and Truong proposed the local linear estimator \cite{truong}. A thorough review of these various estimators, including numerical comparisons, was performed by \cite{hua}.
 
-% numerical comparisons by \cite{hua}
-
-\subsection{Mixture Models}
+\subsection{Mixture Models} \label{mmhistory}
 
 Model-based clustering, or mixture models, are a common method for producing models of latent clusters with probabalistic or ``soft'' cluster assignment. The history of mixture models is particularly long, with the first such models having been implemented more than a century ago by \cite{newcomb} and \cite{pearson}. In much of the following century, progress in the theory of mixture models and their estimation stalled due to a lack of computational power and for lack of an efficient estimating strategy.
 
-This dry spell was called to a close by the introduction by \cite{dempster} of the EM algorithm for estimation of models with supposed latent variables, which vastly simplified the estimation of mixture models. Since then, development and research in mixture modelling has proceeded rapidly, with implementations of bayesian mixture models (\cite{marin}), infinite mixture models (\cite{infinite}), \emph{must-link} and \emph{cannot-link} constraints (\cite{wagstaff}), and many variations of normal mixture models (\cite{mclachlannormal}, \cite{fraley}) all having been published within the last two decades.
+This dry spell was called to a close by the introduction by \cite{dempster} of the EM algorithm for estimation of models with supposed latent variables, which vastly simplified the estimation of mixture models. Since then, development and research in mixture modelling has proceeded rapidly, with implementations of Bayesian mixture models (\cite{marin}), infinite mixture models (\cite{infinite}), \emph{must-link} and \emph{cannot-link} constraints (\cite{wagstaff}), and many variations of normal mixture models (\cite{mclachlannormal}, \cite{fraley}) all having been published within the last two decades.
 
-Yet more recently, mixtures of regressions have received increased attention (\cite{mixglm}, \cite{viele}, \cite{hurn}) as easily interpretable clustering methods that do specify a dependence structure amongst observed covariates without modelling the distributions of the covariates themselves. 
+Yet more recently, mixtures of regressions have received increased attention (\cite{mixglm}, \cite{viele}, \cite{hurn}) as easily interpretable clustering methods that specify a dependence structure amongst observed covariates without modelling the distributions of the covariates themselves. 
 
 
 % discuss asymptotic MLE.
@@ -200,7 +239,7 @@ Yet more recently, mixtures of regressions have received increased attention (\c
 
 \subsection{Mixtures of Nonparametric Regressions}
 
-Both \cite{xiang}, and \cite{huang} have discussed mixtures of nonparametric regressions. The model of Xiang \& Yao estimates mixing proportions and the variance of each component as constants, while allowing the mean of each component to be a nonparametric function of the data. Huang et al., by contrast, propose a model where mixing proportions, mean and variance within each mixture component are all estimated nonparametrically.
+Both \cite{xiang}, and \cite{huang} have considered mixtures of nonparametric regressions. The model of Xiang \& Yao estimates mixing proportions and the variance of each component as constants, while allowing the mean of each component to be a nonparametric function of the data. Huang et al., by contrast, propose a model where mixing proportions, mean and variance within each mixture component are all estimated nonparametrically.
 
 Various attempts have been made at generalizing the above approaches to include linear effects, i.e., to model mixtures of partially linear models (PLMs) or generalized additive models (GAMs). \cite{wu} propose a structure for estimating mixtures of PLMs with a univariate nonparametric effect and arbitrary linear effects per component. Most recently, \cite{zhangpan} extended this model to accept arbitrary nonparametric effects.
 
@@ -221,61 +260,71 @@ Within the smaller subset of mixtures of non-parametric regressions, one may fre
 At its most basic, a finite mixture of $K$ distributions for some positive integer $K$ can be represented by its additive distribution (\ref{genmix}):
 
 \begin{equation} \label{genmix}
-  p(X) \ =\ \sum_{k=1}^{K} \pi_k \cdot p(X | \theta_k)
+  p(X) \ =\ \sum_{k=1}^{K} \pi_k \cdot p(X | \boldsymbol{\theta}_k)
 \end{equation}
 
-where the distribution of each component $k$ is parametrized by some set of parameters $\theta_k$, and the number of observations generated by component $k$ is proportionate to $\pi_k$. All $\pi_k \in (0,1)$, and $\sum_{k=1}^{K}\pi_k = 1$. We assume that each observation generated by the mixture is generated uniquely by one component, such that if we are given some number $n$ of observed values $X_1,...,X_n$, we can denote their categorization within the components of a mixture by a latent variable $\mathcal{L}$ such that $\mathcal{L}_i \in \{1,..,K\}$ for all $i \in \{1,...,n\}$. Then, the distribution of $\mathcal{L}$ can be denoted by equation \ref{latentdist}, and the additive distribution in \ref{genmix} can be deconstructed to the conditional distribution in equation \ref{genmixcond}.
+where the distribution of each component $k$ is parametrized by some set of parameters $\boldsymbol{\theta}_k$, and the number of observations generated by component $k$ is proportionate to $\pi_k$. Necessarily, all $\pi_k \in (0,1)$, and $\sum_{k=1}^{K}\pi_k = 1$. We assume that each observation generated by the mixture is generated uniquely by one component, such that if we are given some number $n$ of observed values $X_1,...,X_n$, we can denote their categorization within the components of a mixture by a latent (i.e., unobserved) variable $\Lambda$ such that $\Lambda_i \in \{1,..,K\}$ for all $i \in \{1,...,n\}$. Then, the distribution of $\Lambda$ can be denoted by equation \ref{latentdist}, and the additive distribution in \ref{genmix} can be deconstructed to the conditional distribution in equation \ref{genmixcond}.
 
 \begin{equation} \label{latentdist}
-  p(\mathcal{L} = k) \ =\ \pi_k
+  p(\Lambda = k) \ =\ \pi_k
 \end{equation}
 
 \begin{equation} \label{genmixcond}
-  p(X | \mathcal{L} = k) \ =\ p_k(X) \ =\ p(X | \theta_k)
+  p(X_i | \Lambda_i = k) \ =\ p_k(X) \ =\ p(X | \theta_k)
 \end{equation}
 
 
-Typically, however, one is simultaneously estimating the number of components $K$, the mixing proportions $\pi_k$, the parameters $\theta_k$, and the latent vector $\mathcal{L}$, at which point it becomes more useful to consider $\boldsymbol{\mathcal{L}}$ an $n \times k$ matrix of sequentially updated probabilities respresenting the probability of observation $n$ having been generated by component $k$. $\boldsymbol{\mathcal{L}}$ must then meet the condition that $\sum_{k=1}^{K}\boldsymbol{\mathcal{L}}_{ik} = 1$ for all $i \in \{1,...,n\}$.
+Typically, however, one is simultaneously estimating the number of components $K$, the mixing proportions $\pi_k$, the parameters $\boldsymbol{\theta}_k$, and the latent variable $\Lambda$, at which point it becomes more useful to consider $\boldsymbol{\Lambda}$ an $n \times k$ matrix of sequentially updated probabilities respresenting the probability of observation $n$ having been generated by component $k$. $\boldsymbol{\Lambda}$ must then meet the condition that $\sum_{k=1}^{K}\boldsymbol{\Lambda}_{ik} = 1$ for all $i \in \{1,...,n\}$.
 
-% Given some number $n$ of observed values $X_1,...,X_n$ and a latent, categorical variable $\mathcal{L}$ such that $\mathcal{L}_i \in \{1,..,K\}$ for all $i \in {1,...,n}$ and some integer $K \in \mathbb{R}^1$, a general mixture model has the following structure:
+This is an extremely flexible basic model structure, with $p(\cdot)$ only needing to be a valid probability density function. Thus, one may have a mixture of gaussians (normals), of binomials, of poissons, etc. These distributions may also be multivariate, and again, there is no restriction on the presumed distribution belonging to each dimension within each cluster $k$. Some specific such models are known by alternate names. For example, with some minimal restrictions added to the mixture of multivariate gaussians, namely, when all component covariances are diagonal, equal, and the variances are infinitesimal or the observations are given ``hard assignments'' (i.e., $\boldsymbol{\Lambda}_{ik} \in \{0,1\}$), one has the well-known $k$-means model.
+
+% Cite? https://en.wikipedia.org/wiki/K-means_clustering#Relation_to_other_algorithms
+
+% Given some number $n$ of observed values $X_1,...,X_n$ and a latent, categorical variable $\Lambda$ such that $\Lambda_i \in \{1,..,K\}$ for all $i \in {1,...,n}$ and some integer $K \in \mathbb{R}^1$, a general mixture model has the following structure:
 % 
 % \begin{equation} \label{genmixlatent}
-%   p(x) \ =\ \sum_{k=1}^{K} \pi_k \cdot p(x | \mathcal{L}_k)
+%   p(x) \ =\ \sum_{k=1}^{K} \pi_k \cdot p(x | \Lambda_k)
 % \end{equation}
 
-\subsubsection{Finite Mixtures of Regressions}
+\subsubsection{Finite Mixtures of Regressions} \label{fmrs}
 
-If one further specifies the distributions $p_k()$ in equation \ref{genmix} as being regression functions, one is left with a finite mixture of regressions. The structure of such a mixture can be described without specifying the exact form of either the regression model $Y = f(\cdot|\vec{X}) + \epsilon$ or the distribution of $E(Y|\vec{X})$. Suppose we observe, instead of univariate $X$, $Y_i,...,Y_n$ and associated $\vec{X}_i,...,\vec{X}_n$. As before, we assume that each observed set $(Y_i, \vec{X_i})$ belongs to one of $\{1,...,k\}$ unobserved components, for some positive integer $k$, and we denote this by a matrix of probabilities $\boldsymbol{\mathcal{L}}$.
+If one further specifies the distributions $p_k()$ in equation \ref{genmix} as regression functions, one is left with a finite mixture of regressions. The structure of such a mixture can be described without specifying the exact form of either the regression model $Y = f_k(\cdot|\vec{X}) + \epsilon_k$ or the distribution of the random component, $\epsilon_k$, as long as there is a weighted procedure for estimating $\hat{f}(\cdot)$. 
 
-% We can assume some vector of regression model parameters $\theta$ and write the likelihood of the mixture of regressions as such:
-% 
+Suppose then that, instead of univariate $X$, we observe $Y_i,...,Y_n$ and associated $\vec{X}_i,...,\vec{X}_n$. As before, we assume that each observed set $(Y_i, \vec{X_i})$ belongs to one of $\{1,...,k\}$ unobserved components for some positive integer $k$, and we denote this by a matrix of probabilities $\boldsymbol{\Lambda}$. We further assume some vector of regression model parameters $\boldsymbol{\theta}_k$. 
+
 % \begin{equation} \label{mixlik}
 %   L(\pi, \Theta) \ =\ \prod_{i=1}^n \sum_{j=1}^k \pi_j p_j(y_i\ |\ \vec{x_i},\ \Theta_j)
 % \end{equation}
-% 
-% 
-% where $\pi_j$ is the prior probability of component $j$, and $p_j$ is the density of $f(Y)$ at $y_i$ given observed $x_i$ and $\Theta_j$ for component $j$. When the likelihood is maximized and parameters are estimated, the model provides the following:
-% 
-% \begin{enumerate}[noitemsep] 
-%   \item An $n \ \times\ k$ matrix $\mathcal{L}$ representing the posterior probability of each $(Y_i, \vec{X_i})$ belonging to each of $K$ components. 
-%   \item A vector $\pi_1,...,\pi_k$ of prior probabilities representing the mixing proportions of each component in the larger mixture model
-%   \item A set of parameters $\Theta_k$ for each regression component $k$ 
-% \end{enumerate}
 
-Thus equation \ref{genmix} becomes equation \ref{regmix}, in which the distribution of $Y$ is conditioned on the associated covariates $\vec{X}$. The likelihood of this model is written out in equation \ref{mixlike}.
+
+% where $\pi_j$ is the prior probability of component $j$, and $p_j$ is the density of $f(Y)$ at $y_i$ given observed $x_i$ and $\Theta_j$ for component $j$. 
+
+
+Thus equation \ref{genmix} becomes equation \ref{regmix}, in which the distribution of $Y$ is conditioned on the associated covariates $\vec{X}$. The likelihood of this model is written out in equation \ref{mixlike}. When the likelihood is maximized and parameters are estimated, the model provides the following:
+
+\begin{enumerate}[noitemsep]
+  \item The previously mentioned $n \ \times\ k$ matrix $\boldsymbol{\Lambda}$ representing the posterior probability of each $(Y_i, \vec{X_i})$ belonging to each of $K$ components.
+  \item A vector $\pi_1,...,\pi_k$ of prior probabilities representing the mixing proportions of each component in the larger mixture model
+  \item A set of parameters $\boldsymbol{\theta}_k$ for each regression component $k$
+\end{enumerate}
 
 \begin{equation} \label{regmix}
-  p(Y) \ =\ \sum_{k=1}^{K}\pi_k p(Y = y\ |\ X = x, \theta_k)
+  p(Y) \ =\ \sum_{k=1}^{K}\pi_k p(Y = y\ |\ X = x, \boldsymbol{\theta}_k)
 \end{equation}
 
 \begin{equation} \label{mixlike}
-   L(\vec{\pi}, \vec{\theta}) \ =\ \prod_{i=1}^n \sum_{k=1}^{K} \pi_k p_k(y_i\ |\ \vec{x_i},\ \theta_k)
+   L(\boldsymbol{\pi}, \boldsymbol{\theta}) \ =\ \prod_{i=1}^n \sum_{k=1}^{K} \pi_k p_k(y_i\ |\ \vec{x_i},\ \boldsymbol{\theta}_k)
 \end{equation}
+
+
+In contrast with other mixture models of multivariate data, this is in fact a 1-deminsonal mixture of conditional normals. The convenience of this structuring is that no assumptions or restrictions are placed on covariates $\boldsymbol{X}$. As a result, none of the parameters of the mixture model external to the model components, i.e., neither the priors $\boldsymbol{\pi}$ nor the estimated posterior matrix $\boldsymbol{\Lambda}$, depend on covariates $\boldsymbol{X}$ except through $Y$. One could choose to include this dependence by modelling the priors $\boldsymbol{\pi}$ as a function of the covariates, i.e., $\boldsymbol{\pi}(\boldsymbol{X})$. The result is what is sometimes called a mixture-of-experts model, with $\boldsymbol{\pi}(\boldsymbol{X})$ being called \emph{gating coefficients} or \emph{gating networks} (\cite{mixexperts}).
+
+
 
 
 \subsubsection{The EM Algorithm}
 
-The EM algorithm is a general method for discovering the parameter estimates that maximize the likelihood of a model which incorporates unobserved variables representing latent clusters. If we denote such a problem as incorporating observations $x_1, ..., x_n$ and associated latent variable $z_1, ..., z_n$ where $z_i \in \{1,...,k\}$, then the EM algorithm allows us to maximize equation \ref{emlike}, which is the general likelihood of a single observation $x$. Note that this equation already appears quite similar to the likelihood of a mixture model. A set of prior probabilities $\pi_k$ is not required, as here we have assumed that each $x_i$ has a \emph{true} cluster assignment, also known as ``hard'' assignment.
+The EM algorithm is a method for discovering the parameter estimates that maximize the likelihood of a model which incorporates unobserved variables representing latent clusters. If we denote such a problem as incorporating observations $x_1, ..., x_n$ and associated latent variable $z_1, ..., z_n$ where $z_i \in \{1,...,k\}$, then the EM algorithm allows us to maximize equation \ref{emlike}, which is the general likelihood of a single observation $x$. Note that this equation already appears quite similar to the likelihood of a mixture model. A set of prior probabilities $\pi_k$ is not required, as here we have assumed that each $x_i$ has a \emph{true} cluster assignment, i.e., a ``hard'' assignment.
 
 \begin{equation} \label{emlike}
    \ell(\theta) \ =\ log \sum_{k=1}^{K} p_k(X=x, Z=z | \theta)
@@ -290,27 +339,39 @@ The EM algorithm allows us to avoid determining the maximum of equation \ref{eml
 Since the log-likelihood function is concave, Jensen's inequality (equation \ref{jenin}, \cite{jensen}) applies, which specifies that the expectation over a convex function of $X$ is greater or equal to the convex function of the expectation. This gives us the inequality in equation \ref{emlikejensen}.
 
 \begin{equation} \label{jenin}
-   E(f(X)) \geq f(E(X)) \text{, for convex function $f$}
+   E(f(X)) \geq f(E(X)) \text{, for convex function $f()$}
 \end{equation}
 
 \begin{equation} \label{emlikejensen}
    log \sum_{k=1}^{K}q(Z) \frac{p_k(X=x, Z=z | \theta)}{q(Z)} \ \geq\ \sum_{k=1}^{K}q(Z) log \frac{p_k(X=x, Z=z | \theta)}{q(Z)}
 \end{equation}
 
-The function $J() = \sum_{k=1}^{K}q(Z) log \frac{p_k(X=x, Z=z | \theta)}{q(Z)}$ therefore serves 
+The function $J(q, \theta) = \sum_{k=1}^{K}q(Z) log \frac{p_k(X=x, Z=z | \theta)}{q(Z)}$ therefore serves as a lower bound to the likelihood. Given this formulation of $J(q, \theta)$, the expectation and maximization steps of the EM algorithm, in equations \ref{estep} and \ref{mstep} respectively, can be seen as complementary maximizers of $J(q, \theta)$. Since each step only maximizes $J(q, \theta)$ with respect to either $q$ or $\theta$, the steps can only increase $J(q, \theta)$ (or keep it constant), thus giving us the inequalities in equations \ref{eineq} and \ref{mineq}. Moreover, since the lower bound on the likelihood can only increase, the likelihood can only increase, thus demonstrating that the EM algorithm converges to at least a local maximum.
 
-the EM algo reaches a local maximum. that's why we run several times.
+\begin{equation} \label{estep}
+   q^{(t)} \ = \ argmax_q J(q, \theta^{(t)})
+\end{equation}
+\begin{equation} \label{mstep}
+   \theta^{(t+1)} \ = \ argmax_{\theta} J(q^{(t)}, \theta)
+\end{equation}
 
-The EM algorithm for a mixture model
+\begin{equation} \label{eineq}
+   J(q^{(t)}, \theta^{(t)}) \ \geq \ J(q^{(t-1)}, \theta^{(t)})
+\end{equation}
+\begin{equation} \label{mineq}
+   J(q^{(t)}, \theta^{(t+1)}) \ \geq \ J(q^{(t)}, \theta^{(t)})
+\end{equation}
+
+% the EM algo reaches a local maximum. that's why we run several times.
+
+% The EM algorithm for a mixture model
 
 
 \subsubsection{Model-Based Generation and Prediction in Mixtures of Regressions} \label{prediction}
 
 In typical mixture model frameworks, the model estimate permits the calculation of unconditioned joint distributions of the data and marginal distributions of any given variable. By extension, such typical models permit the generation of new pseudo-observations that conform with the model structure. The mixture of regressions model does not permit this type of generativity unless the distribution of the covariates is known \emph{a priori}, since the distribution of the covariates is not estimated as a part of the model. The mixture of regressions model thus requires a covariate vector $\vec{x}$ in order to produce the marginal distribution of $Y$.
 
-Similarly, whereas typical mixture models can classify new observations by summing over the product of the mixture prior and the density at the new observed data (\ref{typ_mix}), a mixture of regressions model must classify with a bayesian approach of summing over the likelihood given the observed data (\ref{reg_mix}).
-
- [THIS IS ALL WRONG]
+Similarly, whereas typical mixture models can classify new observations in a bayesian manner by summing over the product of the mixture prior and the density at the new observed data (\ref{typ_mix}), a mixture of regressions model must classify by summing over the density \emph{given} the observed data (\ref{reg_mix}).
 
 \begin{equation} \label{typ_mix}
   p(Y = y) \ =\ \sum_{k=1}^{K}\pi_k p_k(\vec{Y} = \vec{y}\ | \theta_k)
@@ -320,7 +381,7 @@ Similarly, whereas typical mixture models can classify new observations by summi
   p(Z = j | X = x, \theta) \ =\ \frac{\pi_j p_j(y \ | \ X = x, \theta_j)}{\sum_{k=1}^{K}\pi_k p_k(y \ | \ X = x, \theta_k)}
 \end{equation}
 
-This is simply the application of Bayes' theorem (\ref{bayes}), where the distributions of the components $k$ are multiplied by the posterior given $X = x$ rather than the uninformed prior $\pi_k$. Practically, it is not necessary to calculate the integral in the denominator of the posterior analytically; rather, the sum of the posteriors are normalized to sum to $1$.
+This is simply the standard application of Bayes' theorem (\ref{bayes}), where the densities of $y | X = x$ for each component $k$ are multiplied by the uninformed priors $\pi_k$ and normalized over the marginal distribution of $y | X = x$.
 
 \begin{equation} \label{bayes}
   p(\theta | X) \ =\ \frac{p(X|\theta)p(\theta)}{\int_{\theta}p(X|\theta)p(\theta)}
@@ -344,10 +405,12 @@ where the model has $h$ non-linear covariates and $j$ linear covariates, where e
 
 This model overlaps broadly with Generalized Additive Models (GAMs), but differs critically in that we place no restriction on the smoothness of the non-linear components. GAMs are, however, instructive in that they are partly motivated by the difficulty in estimating non-additive, non-parametric models, and the additive structure of our partially linear model is similarly motivated.
 
-More specifically, as pointed out by \cite{hastiegam}, 
+More specifically, although nonparametric methods exist for multiple regression, they are faced with the well-known ``curse of dimensionality'' (\cite{curse}). The slow convergence associated with the curse of dimensionality is avoided by fitting the less general, additive model, where each term is fit within one dimension. Both GAMs and partial linear models can be estimated using the backfitting algorithm (\cite{backfit}), which iteratively estimates the individual terms of an additive model and, up to a user-specified threshold, determines an optimal solution.
 
-For example, \cite{guangcheng} show that, for the model estimated in section \ref{plmmc}, the difference between the multivariate and additive estimate: 
-where it is shown that estimate \ref{partlinloss} is a consistent estimator of $\{\vec{\beta}, g_1,...,g_p\}$ 
+% [THIS NEEDS TO BE DEVELOPED]
+
+% For example, \cite{guangcheng} show that, for the model estimated in section \ref{plmmc}, the difference between the multivariate and additive estimate: 
+% where it is shown that estimate \ref{partlinloss} is a consistent estimator of $\{\vec{\beta}, g_1,...,g_p\}$ 
 
 % \subsubsection{The Backfitting Algorithm}
 % 
@@ -386,7 +449,7 @@ The MLE of the entire partial linear model is obtained via the backfitting algor
   \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \  holding \ \ \ \{g_1,...,g_p\} \ \ \ fixed
 \end{equation}
 
-This model and estimator is thoroughly explored by \cite{guangcheng}, where it is shown that, under certain conditions (see section \ref{abplmmc}), $\hat{\beta}_n$ is $\sqrt{n}$-consistent (\ref{asymbeta}), while the estimates $\{\hat{g}_1,...,\hat{g}_p\}$ converge in distribution as to a two-sided brownian motion plus a parabola (\ref{asymg}). 
+This model and estimator is thoroughly explored by \cite{guangcheng}, where it is shown that, under certain conditions (see section \ref{abplmmc} of the appendix), $\hat{\beta}_n$ is $\sqrt{n}$-consistent (\ref{asymbeta}), while the estimates $\{\hat{g}_1,...,\hat{g}_p\}$ converge in distribution as to a two-sided brownian motion plus a parabola (\ref{asymg}). 
 
 \begin{equation} \label{asymg}
 \begin{aligned}
@@ -405,13 +468,16 @@ This model and estimator is thoroughly explored by \cite{guangcheng}, where it i
 \end{aligned}
 \end{equation}
 
-The asymptotic distribution of $\hat{\beta}$ evidently has a larger variance than in the case of the ordinary least squares estimate. As Cheng points out, this can be considered the cost of including non-parametric terms in the regression model. The rate of convergence for the non-parametric terms is slower than that of the linear terms, as expected, but significantly faster than would be the case if the nonparametric terms were multivariate monotone rather than univariate monotone and additive.
+The asymptotic distribution of $\hat{\beta}$ evidently has a larger variance than in the case of the ordinary least squares estimate. As Cheng points out, this can be considered the cost of including non-parametric terms in the regression model. 
+
+The rate of convergence for the non-parametric terms is slower than that of the linear terms, as expected, but significantly faster than would be the case if the nonparametric terms were multivariate monotone rather than univariate monotone and additive. 
+% Moreover, 
 
 
 \subsection{Isotonic Regression}
 
 \subsubsection{Univariate Isotonic Regression}
-At the most basic level, with univariate $x$ and $y$ and a simple ordering amongst $x$ such that \( x_{1} \leq x_{2} \leq ... \leq x_{n} \) for all \( x_{i} \in X \), isotonic regression determines a non-decreasing function $g(\cdot)$ such that \( g(x_{1}) \leq g(x_{2}) \leq ... \leq g(x_{n}) \) and for which \( \hat{g}(\cdot) = \argmin_{g} \sum_{i=1}^{n}||g(x_{i}) - x_{i}||_{L} \) for some loss function $||\cdot||_{L}$. If observations are weighted, the objective function becomes \( \hat{g}(\cdot) = \argmin_{g} \sum_{i=1}^{n}w_{i}||g(x_{i}) - x_{i}||_{L} \) for weights $w$. In the so-called antitonic case, the function $g(\cdot)$ is non-increasing such that \( g(x_{1}) \geq g(x_{2}) \geq ... \geq g(x_{n}) \). Without loss of generality, from this point on we discuss only the non-decreasing case.
+At the most basic level, with univariate $x$ and $y$ and a simple ordering amongst $x$ such that \( x_{1} \leq x_{2} \leq ... \leq x_{n} \) for all \( x_{i} \in X \), isotonic regression determines a non-decreasing function $g(\cdot)$ such that \( g(x_{1}) \leq g(x_{2}) \leq ... \leq g(x_{n}) \) and for which \( \hat{g}(\cdot) = \argmin_{g} \sum_{i=1}^{n}||g(x_{i}) - x_{i}||_{L} \) for some loss function $||\cdot||_{L}$. If observations are weighted, the objective function becomes \( \hat{g}(\cdot) = \argmin_{g} \sum_{i=1}^{n}w_{i}||g(x_{i}) - x_{i}||_{L} \) for weights $w$. In the so-called antitonic case, the function $g(\cdot)$ is non-increasing such that \( g(x_{1}) \geq g(x_{2}) \geq ... \geq g(x_{n}) \). Without loss of generality, from this point on we are only concerned with the non-decreasing case.
 
 If we consider specifically the squared error loss, our risk function and weighted risk function become equations \ref{lseisotonic} and \ref{lseweightedisotonic} respectively. Equation \ref{lseweightedisotonic} can alternately be written explicitly in the form of a min-max formula, as in equation \ref{minmax} (\cite{jordan}), giving it a characterization which facilitates the study of the properties of the estimator $\hat{g}(\cdot)$. Equation \ref{minmax} breaks the function $g(\cdot)$ into non-decreasing ``blocks'', and assigns to each block the weighted mean of the values $x$ contained in that block.
 
@@ -433,7 +499,9 @@ One can see from equation \ref{minmax} that determining the estimate $\hat{g}(\c
 
 % \subsubsection{Multivariate Isotonic Regression}
 % 
-% For the sake of completeness, we briefly describe multivariate isotonic regression here. However, we shall see that, as noted in section \ref{gams}, the rate of convergence in multivariate isotonic functions suffers the well-known ``curse of dimensionality'', rendering it of low practical use in instances where the dimensionality of the data is high and the number of observations is not extremely large.
+% For the sake of completeness, we briefly describe multivariate isotonic regression. However, we shall see that, as noted in section \ref{gams}, the rate of convergence in multivariate isotonic functions suffers the well-known ``curse of dimensionality'', rendering it of low practical use in instances where the dimensionality of the data is high and the number of observations is not extremely large.
+
+
 
 
 
@@ -490,7 +558,7 @@ There is no requirement that the $K$ regression functions in model \ref{modstruc
 
 The proposed model is obtained from a series of nested, iterative algorithms, described below. Algorithm 1 describes the EM algorithm for fitting mixture priors and observation posteriors. Algorithm 2 describes the weighted partial linear regression for the fitting of each component within each M-step of the EM algorithm. Algorithm 3 describes the weighted, cyclic pool adjacent violators algorithm for cases where there is more than one monotone function fit within a single partial linear regression. Algorithm 4 describes the weighted pool adjacent violators algorithm for fitting a single monotone regression. In all cases, convergence thresholds are set by the user.
 
-\begin{algorithm}[H]
+\begin{algorithm}
 \SetAlgoLined
 \KwData{\;
   $x$ — an \(n \times p\) matrix (independent variables with no shape constraint)\;
@@ -499,25 +567,25 @@ The proposed model is obtained from a series of nested, iterative algorithms, de
   $k$ — a positive integer representing the number of categories of latent variable L\;
 }
 \KwResult{\;
-  \( \mathcal{L} \) — an \(n \times k\) matrix representing the posterior probability of observation \(i = 1,...,n\) belonging to latent category \(j = 1,...,k\). Additionally, for all \(i = 1,...,n\) and \(j = 1,...,k\), \( \mathcal{L}_{ij} \) is a real number in the range \([0,1]\), and \( \sum_{j=1}^{k} \mathcal{L}_{ij} = 1 \) \;
+  \( \Lambda \) — an \(n \times k\) matrix representing the posterior probability of observation \(i = 1,...,n\) belonging to latent category \(j = 1,...,k\). Additionally, for all \(i = 1,...,n\) and \(j = 1,...,k\), \( \Lambda_{ij} \) is a real number in the range \([0,1]\), and \( \sum_{j=1}^{k} \Lambda_{ij} = 1 \) \;
   $\vec{\pi}$ — a vector $\pi_1,...,\pi_k$ of prior probabilities representing the mixing proportions of each component in the larger mixture model \;
   $\vec{\Theta}$ — a set of parameters $\Theta_k$ for each regression component $k$ \;
 }
 Set iteration index $d \leftarrow 1$ \;
  \For{\( i \in 1,...n \)}{
- With uniform probability across $k$, assign one of the elements of \( [\mathcal{L}_{i1}, ..., \mathcal{L}_{ik}] \) to 1 and all other to 0, such that \( \mathcal{L}_{i} = [0,..., 1, ...,0] \) \;}
+ With uniform probability across $k$, assign one of the elements of \( [\Lambda_{i1}, ..., \Lambda_{ik}] \) to 1 and all other to 0, such that \( \Lambda_{i} = [0,..., 1, ...,0] \) \;}
  \While{algorithm is not converged}{
   % M-step:\;
   \For{\(j \in 1,...,k\)}
-  {Set prior mixture proportion \( \displaystyle{\pi_{j}^{(d)} \leftarrow \frac{1}{n}\sum_{i=1}^{n}\mathcal{L}_{ij}^{(d-1)}} \) \;
-Set weighted partial linear model regression parameters such that \( \displaystyle{[\hat{\beta}_{j}, \hat{g}_{j}]^{(d)} \leftarrow \argmin_{\beta, g} \sum_{i=1}^{n}\mathcal{L}_{ij}^{(d-1)}(y - x\beta_{j} - g_{j}(z))^{2} } \) (See Algorithm 2, WPLR)\;}  
+  {Set prior mixture proportion \( \displaystyle{\pi_{j}^{(d)} \leftarrow \frac{1}{n}\sum_{i=1}^{n}\Lambda_{ij}^{(d-1)}} \) \;
+Set weighted partial linear model regression parameters such that \( \displaystyle{[\hat{\beta}_{j}, \hat{g}_{j}]^{(d)} \leftarrow \argmin_{\beta, g} \sum_{i=1}^{n}\Lambda_{ij}^{(d-1)}(y - x\beta_{j} - g_{j}(z))^{2} } \) (See Algorithm 2, WPLR)\;}  
 
   % E-step:\;
   \For{\(i \in 1,...,n\)}{
     \For{\(j \in 1,...,k\)}
-    {Set \( \mathcal{L}_{ij}^{(d)} \leftarrow \pi_{j}^{(d)}p(y_{i} | x_{i}, \beta_{j}^{(d)}, g_{j}^{(d)}(z_{i})) \), where \(p(y_{i} | x_{i}, \beta_{j}^{(d)}, g_{j}^{(d)}(z_{i}))\) is the density of a $Normal$ distribution with \(\mu = x_{i}\beta_{j}^{(d)} + g_{j}^{(d)}(z_{i})\) and \(\sigma = \sqrt{\frac{\sum w_{i}r^{2}/\bar{w}}{n-rk(X)}}\) }
+    {Set \( \Lambda_{ij}^{(d)} \leftarrow \pi_{j}^{(d)}p(y_{i} | x_{i}, \beta_{j}^{(d)}, g_{j}^{(d)}(z_{i})) \), where \(p(y_{i} | x_{i}, \beta_{j}^{(d)}, g_{j}^{(d)}(z_{i}))\) is the density of a $Normal$ distribution with \(\mu = x_{i}\beta_{j}^{(d)} + g_{j}^{(d)}(z_{i})\) and \(\sigma = \sqrt{\frac{\sum w_{i}r^{2}/\bar{w}}{n-rk(X)}}\) }
     % sigma = sqrt(sum(wates * (resids)^2 / mean(wates))/ (nrow(x)-qr(x)$rank))
-  Normalize the posterior probabilities \( [\mathcal{L}_{i1},...,\mathcal{L}_{ik}]^{(d)} \) such that \( \displaystyle{\sum_{j=1}^{k}\mathcal{L}_{ij}^{(d)} = 1} \)\;
+  Normalize the posterior probabilities \( [\Lambda_{i1},...,\Lambda_{ik}]^{(d)} \) such that \( \displaystyle{\sum_{j=1}^{k}\Lambda_{ij}^{(d)} = 1} \)\;
   }
   
   $d = d + 1$\;
@@ -527,7 +595,7 @@ Set weighted partial linear model regression parameters such that \( \displaysty
 \end{algorithm}
 
 
-\begin{algorithm}[H]
+\begin{algorithm}
 \SetAlgoLined
 \KwData{\;
   $x$ — an \(n \times p\) matrix (independent variables with no shape constraint)\;
@@ -547,12 +615,12 @@ Set weighted partial linear model regression parameters such that \( \displaysty
   $b = b + 1$\;
   
  }
- \caption{Weighted Partial Linear Regression}
+ \caption{Weighted Partial Linear Regression} \label{wplralgo}
 \end{algorithm}
 
 
 
-\begin{algorithm}[H]
+\begin{algorithm}
 \SetAlgoLined
 \KwData{\;
   $x$ — an \(n \times q\) matrix (independent variables)\;
@@ -571,13 +639,13 @@ Set weighted partial linear model regression parameters such that \( \displaysty
   $m = m + 1$\;
   
  }
- \caption{Weighted Cyclic Pool Adjacent Violators Algorithm}
+ \caption{Weighted Cyclic Pool Adjacent Violators Algorithm} \label{cpavalgo}
 \end{algorithm}
 
 
 
 
-\begin{algorithm}[H]
+\begin{algorithm}
 \SetAlgoLined
 \KwData{\;
   $x$ — an \(n \times 1\) vector (independent variable)\;
@@ -608,56 +676,57 @@ Set weighted partial linear model regression parameters such that \( \displaysty
 %   \item[]	$z$ — an \(n \times q\) matrix (independent variables with monotone shape constraint)
 %   \item[]	$y$ — an \(n \times 1\) matrix (dependent variable)
 %   \item[]	$k$ — a positive integer representing the number of categories of latent variable L
-%   \item[] \( \mathcal{L} \) — an \(n \times k\) matrix representing the posterior probability of observation \(i = 1,...,n\) belonging to latent category \(j = 1,...,k\). Additionally, for all \(i = 1,...,n\) and \(j = 1,...,k\), \( \mathcal{L}_{ij} \) is a real number in the range \([0,1]\), and \( \sum_{j=1}^{k} \mathcal{L}_{ij} = 1 \)
+%   \item[] \( \Lambda \) — an \(n \times k\) matrix representing the posterior probability of observation \(i = 1,...,n\) belonging to latent category \(j = 1,...,k\). Additionally, for all \(i = 1,...,n\) and \(j = 1,...,k\), \( \Lambda_{ij} \) is a real number in the range \([0,1]\), and \( \sum_{j=1}^{k} \Lambda_{ij} = 1 \)
 % \end{itemize}
 % 
 % \begin{enumerate}
-%   \item For each \( i \) = 1,...n, set the vector \( \mathcal{L}_{i} \) = \( [\mathcal{L}_{i1},...,\mathcal{L}_{ik}] \) as an instance of a multinomial distribution with k=k and n=1. I.e., randomly assign one of the vector elements of \( [\mathcal{L}_{i1}, ..., \mathcal{L}_{ik}] \) to 1 and all other lik to 0, such that each \( \mathcal{L}_{i} = [0,..., 1, ...,0] \) where 1 is at a random index.
+%   \item For each \( i \) = 1,...n, set the vector \( \Lambda_{i} \) = \( [\Lambda_{i1},...,\Lambda_{ik}] \) as an instance of a multinomial distribution with k=k and n=1. I.e., randomly assign one of the vector elements of \( [\Lambda_{i1}, ..., \Lambda_{ik}] \) to 1 and all other lik to 0, such that each \( \Lambda_{i} = [0,..., 1, ...,0] \) where 1 is at a random index.
 %   \item In each iteration $(d)$ until convergence:
 %     \begin{enumerate}
 %       \item M-step
 %         \begin{enumerate}
-%           \item Calculate prior mixture proportions \([p_{1},...,p_{k}]^{(d)}\) such that \( \displaystyle{p_{k}^{(d)} = \frac{1}{n}\sum_{i=1}^{n}\mathcal{L}_{ik}^{(d-1)}} \)
-%           \item Calculate weighted partial linear model regression parameters; For each \( j = 1,..., k \), estimate \( \displaystyle{[\hat{\beta}_{j}, \hat{g}_{j}]^{(d)} = \argmin_{\beta, g} \sum_{i=1}^{n}\mathcal{L}_{ij}^{(d-1)}(y - x\beta_{j} - g_{j}(z))^{2} } \) by iterating the following steps until convergence. For each iteration $b$:
+%           \item Calculate prior mixture proportions \([p_{1},...,p_{k}]^{(d)}\) such that \( \displaystyle{p_{k}^{(d)} = \frac{1}{n}\sum_{i=1}^{n}\Lambda_{ik}^{(d-1)}} \)
+%           \item Calculate weighted partial linear model regression parameters; For each \( j = 1,..., k \), estimate \( \displaystyle{[\hat{\beta}_{j}, \hat{g}_{j}]^{(d)} = \argmin_{\beta, g} \sum_{i=1}^{n}\Lambda_{ij}^{(d-1)}(y - x\beta_{j} - g_{j}(z))^{2} } \) by iterating the following steps until convergence. For each iteration $b$:
 %           \begin{enumerate}
-%             \item Weighted PAVA/CPAV: If $z$ is univariate, i.e., an $n \times 1$ matrix, use PAVA to estimate \( \displaystyle{\hat{g}_{j}^{(b)} = \argmin_{g} \sum_{i=1}^{n}\mathcal{L}_{ij}^{(d-1)}([y - x\beta_{j}^{(b-1)}] - g_{j}(z))^{2}} \) holding \( \beta_{j}^{(b-1)} \) fixed. If $z$ is multivariate, use CPAV algorithm*.
-%             \item Weighted Linear Model: Estimate \( \displaystyle{\hat{\beta}_{j}^{(b)} = \argmin_{\beta} \sum_{i=1}^{n}\mathcal{L}_{ij}^{(d-1)}([y - g_{j}^{(b)}(z)] - x\beta_{j})^{2}} \) holding \( g_{j}^{(b)} \) fixed.
+%             \item Weighted PAVA/CPAV: If $z$ is univariate, i.e., an $n \times 1$ matrix, use PAVA to estimate \( \displaystyle{\hat{g}_{j}^{(b)} = \argmin_{g} \sum_{i=1}^{n}\Lambda_{ij}^{(d-1)}([y - x\beta_{j}^{(b-1)}] - g_{j}(z))^{2}} \) holding \( \beta_{j}^{(b-1)} \) fixed. If $z$ is multivariate, use CPAV algorithm*.
+%             \item Weighted Linear Model: Estimate \( \displaystyle{\hat{\beta}_{j}^{(b)} = \argmin_{\beta} \sum_{i=1}^{n}\Lambda_{ij}^{(d-1)}([y - g_{j}^{(b)}(z)] - x\beta_{j})^{2}} \) holding \( g_{j}^{(b)} \) fixed.
 %           \end{enumerate}
 %         \end{enumerate}
 %       \item E-step
 %         \begin{enumerate}
-%           \item Given $k$ regression functions \( [E(Y | X; Z) = X\beta_{k} + g_{k}(Z)]^{(d)} \), for \( i = 1,...,n \), calculate \( [\mathcal{L}_{i1},...,\mathcal{L}_{ik}]^{(d)} \) as \( [p_{1}^{(d)}P(y_{i} | x_{i}, \beta_{1}^{(d)}, g_{1}^{(d)}(z_{i})),...,p_{k}^{(d)}P(y_{i} | x_{i}, \beta_{k}^{(d)}, g_{k}^{(d)}(z_{i}))] \)
-%           \item For each \( i = 1,...,n \), normalize the posterior probabilities \( [\mathcal{L}_{i1},...,\mathcal{L}_{ik}]^{(d)} \) such that \( \displaystyle{\sum_{j=1}^{k}\mathcal{L}_{ij}^{(d)} = 1} \)
+%           \item Given $k$ regression functions \( [E(Y | X; Z) = X\beta_{k} + g_{k}(Z)]^{(d)} \), for \( i = 1,...,n \), calculate \( [\Lambda_{i1},...,\Lambda_{ik}]^{(d)} \) as \( [p_{1}^{(d)}P(y_{i} | x_{i}, \beta_{1}^{(d)}, g_{1}^{(d)}(z_{i})),...,p_{k}^{(d)}P(y_{i} | x_{i}, \beta_{k}^{(d)}, g_{k}^{(d)}(z_{i}))] \)
+%           \item For each \( i = 1,...,n \), normalize the posterior probabilities \( [\Lambda_{i1},...,\Lambda_{ik}]^{(d)} \) such that \( \displaystyle{\sum_{j=1}^{k}\Lambda_{ij}^{(d)} = 1} \)
 %         \end{enumerate}
 %     \end{enumerate}
 % \end{enumerate}
 
 \subsection{Asymptotic Properties of Model and Estimator}
 
-[Discuss the asymptotic standard error estimates of parameters and functions.]
+Under various sets of regularity assumptions, other authors have been able to derive analytically the asymptotic variance of estimators for mixtures of various types of non-parametric and semi-parametric regressions (see, for example, the publications of \cite{zhangetal}, \cite{huang}, \cite{zhangpan}). This can be helpful if the analytic variance allows for the construction of simple, parametrized confidence intervals for model coefficients, or if the analytic representation gives some insight into the asymptotic shape and spread of the variance. 
 
+We know that the asymptotic variance of the model will be some function of the asymptotic variance of the model components. We therefore know that in this case, given the findings of \cite{guangcheng}, the asymptotic variance of the model will be functions of a tensor power of a sum over the expectations of the linear covariates given the non-linear covariates (see equations \ref{asymg} and \ref{asymbeta} for the complete variance as proven by Guang). As Guang points out, these expectations (i.e., $\sum_{h=1}^{p} E(X|Z_h$) can be estimated by a kernel method.
+
+This means that calculating the analytic variance of the model would require the selection of a tuning parameter, whereas one of our model's primary strengths is its lack of tuning parameters. Moreover, the variance of both the linear coefficients and the nonparametric functions, as presented by Guang, are sufficiently complex as to offer little in the way of intuitive understanding. For these reasons, we opt to forego the analytic demonstration of the model variance and instead calculate the distributions of model estimates via the ordinary bootstrap.
+
+% We presume that 
+% [Discuss the asymptotic standard error estimates of parameters and functions.]
+% [In prinicple, we expect the same behaviour but we cant figure it out]
 
 \subsection{Confidence Intervals via Bootstrapping}
 
-We opt to implement and demonstrate the proposed model with confidence intervals calculated by bootstrapping. In this regard, we use and compare two approaches in the remainder of this paper -- the ordinary, or traditional bootstrap, and a component-wise bootstrap conditioned on the posterior matrix of the first model. Each approach has advantages and disadvantages, which we discuss in the following sections.
-
-\subsubsection{Ordinary Bootstrap}
-
-Although the ordinary bootstrap applied to mixture models delivers all the typical advantages of bootstrapping for determining parameter confidence intervals, it runs into the well-known label-switching problem inherent in clustering algorithms. Specifically, when the mixture model is run multiple times, as with the bootstrap, the labeling of the resulting clusters is random and there is no guarantee, nor even a higher probability, that clusters with the same labels in two different models will represent the same underlying mixture component.
+We opt to implement and demonstrate the proposed model with confidence intervals calculated via bootstrapping. Although the ordinary bootstrap applied to mixture models delivers all the typical advantages of bootstrapping for determining parameter confidence intervals (\cite{efron}), it runs into the well-known label-switching problem inherent in clustering algorithms. Specifically, when the mixture model is run multiple times, as with the bootstrap, the labeling of the resulting clusters is random and there is no guarantee, nor even a higher probability, that clusters with the same labels in two different models will represent the same underlying mixture component.
 
 One partial solution to this problem, which we apply in the current paper, is to select the estimated parameters and non-parametric functions of the complete model as the starting values when estimating each of the bootstrapped models. This results in both a decreased computational burden in calculating the bootstrapped estimates, and the bypassing of the label-switching problem, since bootstrap-estimated components will likely share the same label as the component from which their starting values were drawn.
 
-The disadvantage of this approach is that it ignores the possibility of bootstrap-estimated parameters reaching different likelihood maxima as a result of having had random as opposed to fixed starting values. For this reason, this approach underestimates the parameter variance. Moreover, if the first model which one fit returned estimates from a local likelihood maximum, subsequent bootstrap estimates may likewise be caught in the same local likelihood maximum. Parameter distributions from such a bootstrap might then be heavily biased.
+The disadvantage of this approach is that it ignores the possibility of bootstrap-estimated parameters reaching different likelihood maxima as a result of having had random as opposed to fixed starting values. For this reason, this approach underestimates the parameter variance. Moreover, if the first model which one fit returned estimates from a local likelihood maximum instead of a global maximum, subsequent bootstrap estimates may likewise be caught in the same local maximum. Parameter distributions from such a bootstrap might then be heavily biased.
 
-One obvious approach to the problem of label-switching would be to run the ordinary bootstrap with random starting values and to treat the bootstrap-estimated parameters and non-parametric functions as ``observations''. We would then have a set of observations with latent class membership, and moreover, a known number of classes $k$, which is in fact precisely the problem structure which typically motivates a mixture model. Thus, we would run yet another mixture model on these parameters to determine a probabalistic interpretation of the distributions of parameters per component, as well as an estimate of the posterior probability of each parameter set belonging to each component. The implementation of such a hypothetical model may be difficult given that each observed parameter set includes both point-estimates and step functions, and we therefore leave this task for future research.
+One obvious approach to the problem of label-switching would be to run the ordinary bootstrap with random starting values and to treat the bootstrap-estimated parameters and non-parametric functions as ``observations''. We would then have a set of observations with latent class membership, and moreover, a known number of classes $k$, which is in fact precisely the problem structure which typically motivates a mixture model. Thus, we would run yet another mixture model on these parameters to determine a probabalistic interpretation of the distributions of parameters per component, as well as an estimate of the posterior probability of each parameter set belonging to each component. The implementation of such a hypothetical model may be difficult given that each observed parameter set includes both point-estimates and step functions, meaning that such a model would require the definition of a distance measure between non-parametric functions. We therefore leave this task for future research.
 
-\subsubsection{Conditional Bootstrap}
+One tempting alternative to the ordinary bootstrap in the context of mixture models would be to take the posterior estimates for each observation from the initial model as resampling weights in the calculation of bootstrapped models. One might suspect that such a method would approximate the ordinary bootstrap with the significant advantages of only having to run the full model once and entirely avoiding the label-switching problem. Unfortunately, such an approach would severely underestimate the variance of the model, as it eschews the uncertainty contained in the initial posterior estimates. Moreover, the uncertainty of the initial posterior estimates cannot be approximated \emph{a priori}, since this is, in part, precisely what is determined by the ordinary bootstrap.
 
-An alternative to the ordinary bootstrap is what we shall call in this section the \emph{conditional bootstrap}. Instead of resampling with replacement from the data and rebuilding the entire mixture model from the beginning for each iteration of the bootstrap, the conditional bootstrap takes the posterior estimates for each observation from the initial model as fixed weights in the calculation of the mixture subcomponents. The data for the conditional bootstrap are resampled from the complete dataset as usual.
-
-The conditional bootstrap can thus be thought of as the ordinary bootstrap for the mixture components, conditioned on the weights being equal to the point-estimate posteriors from the initial model. There are two clear advantages to this approach: First, the label-switching problem is entirely avoided, as the component labels are \emph{a priori} known. Second, the bootstrap model refitting is extremely computationally efficient, as the original mixture model fitting process is run only once.
-
-The disadvantage to this approach is, of course, that the uncertainty in the posterior estimates is entirely ignored in the construction of the final parameter distributions. Moreover, depending on the data, the posterior estimates may themselves be highly unstable. Thus, this approach underestimates the variance of the parameter estimates, and the degree to which it underestimates the variance is unknown. Moreover, if the initial model from which the posterior point-estimates are drawn terminated in a local maximum, the results of the conditional bootstrap may be highly biased and misleading.
+% The conditional bootstrap can thus be thought of as the ordinary bootstrap for the mixture components, conditioned on the weights being equal to the point-estimate posteriors from the initial model. There are two clear advantages to this approach: First, the label-switching problem is entirely avoided, as the component labels are \emph{a priori} known. Second, the bootstrap model refitting is extremely computationally efficient, as the original mixture model fitting process is run only once.
+% 
+% The disadvantage to this approach is, of course, that the uncertainty in the posterior estimates is entirely ignored in the construction of the final parameter distributions. Moreover, depending on the data, the posterior estimates may themselves be highly unstable. Thus, this approach underestimates the variance of the parameter estimates, and the degree to which it underestimates the variance is unknown. Moreover, if the initial model from which the posterior point-estimates are drawn terminated in a local maximum, the results of the conditional bootstrap may be highly biased and misleading.
 
 % \subsection{Model Selection} TODO include a model selection section?
 
@@ -665,7 +734,7 @@ The disadvantage to this approach is, of course, that the uncertainty in the pos
 
 \subsection{Computational Complexity of Estimator} \label{seccomplex}
 
-A common concern amongst users of this algorithm will be the speed of the estimator, and by extension, the computational complexity of the estimator. It is not possible to specify exact $O(\cdot)$ notation given that the number of iterations within each optimization step of the algorithm is problem-dependent. However, given the generalized nature of the algorithm, we can compare its complexity empirically for different types and numbers of features within the sub-component regression models by running timed applications on pseudo-data. In the benchmarking table below, we compare the run-time of the estimation of 4 models -- with one monotone covariate and no linear effects; with two monotone covariates and no linear effects; with one monotone covariate and four linear effects; with two monotone covariates and three linear effects -- and all with the number of components, 4, known \emph{a priori}.
+A common concern amongst users of this model will be the speed of the estimator, and by extension, the computational complexity of the estimator. It is not possible to specify exact $O(\cdot)$ notation given that the number of iterations within each optimization step of the algorithm is problem-dependent. However, given the generalized nature of the algorithm, we can compare its complexity empirically for different types and numbers of features within the sub-component regression models by running timed applications on pseudo-data. In the benchmarking table below, we compare the run-time of the estimation of 4 models -- with one monotone covariate and no linear effects; with two monotone covariates and no linear effects; with one monotone covariate and four linear effects; with two monotone covariates and three linear effects -- and all with the number of components, 4, known \emph{a priori}.
 
 % \begin{equation} \label{modstruc}
 %   Y = 
@@ -679,13 +748,25 @@ A common concern amongst users of this algorithm will be the speed of the estima
 
 % TIMED COMPLEXITY: here.
 \begin{minipage}{0.8\textwidth}
-
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{verbatim}
+##                                         test replications elapsed relative
+## 4     Bivariate monotone with linear effects            1 968.234   63.379
+## 2  Bivariate monotone without linear effects            1 346.033   22.651
+## 3    Univariate monotone with linear effects            1  15.277    1.000
+## 1 Univariate monotone without linear effects            1  16.451    1.077
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
 \captionof{figure}[Abbreviated Caption]{In the table above, we see the average elapsed time for four different types of model constructions -- with and without linear effects, and with and without multiple monotone terms.}
 \end{minipage}
 
-One can see that -- for a model with 4 latent components -- adding a second monotone nonparametric effect within each component multiplies the computation time approximately 50. This is an indication of the heavy cost of increasing even slightly the dimensionality of the non-parametric estimation within each component model.
+One can see that -- for a model with 4 latent components -- adding a second monotone nonparametric effect within each component multiplies the computation time by approximately 50. This is an indication of the heavy cost of increasing even slightly the dimensionality of the non-parametric estimation within each component model.
 
 By comparison, adding linear effects within the component models comes essentially for free. In fact, the estimation of models with univariate monotone effects and 4 linear effects is \emph{faster} than the complementary model without linear effects. 
+
+It should be noted that the difference in speed between fitting models with monovariate and multivariate monotone terms is a function of the maximum number of iterations and the tolerance threshold set on both the backfitting sequence in the larger partial linear model \emph{and} the backfitting sequence in the cyclic PAVA (or CPAV) sub-model (see algorithms \ref{wplralgo} and \ref{cpavalgo} for reference). All of these parameters are set by the user, and there is as of yet no automated way of selecting parameters for the optimal convergence rate of the algorithm. We leave this problem to future research.
 
 \section{Model Applications}
 \subsection{Simulated Data}
@@ -696,23 +777,17 @@ In this section, we demonstrate the application of the proposed model by fitting
   Y_{1} &= 50 + X^3 + \epsilon_1 \\
   Y_{2} &= -50 + 0.04 \cdot X^5 + 30 \cdot X + \epsilon_2 \\
 \end{align*}
-
 where 
-
 \begin{align*}
   \epsilon_1 &\sim N(0,200) \\
   \epsilon_2 &\sim N(0,300) \\
 \end{align*}
-
 and
-
 \begin{align*}
   \pi_1 &= 0.65 \\
   \pi_2 &= 0.35 \\
 \end{align*}
-
 and
-
 \begin{align*}
   X &\sim Uniform(-10,10) \\
 \end{align*}
@@ -725,23 +800,50 @@ We proceed to estimate a mixture of univariate regressions (\ref{m2}), with the 
 \end{equation}
 
 % TODO complete boostrap implementation. Have flexmix bootstrap return model with monotone fit(s) as well as posteriors for a bootstrapped rootogram
-\begin{figure}
+\begin{figure}[H]
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}
 
+{\centering \includegraphics[width=\maxwidth]{figure/pseudo_mixture_monovar-1} 
+
+}
+
+
+
+\end{knitrout}
 % TODO describe the confidence intervals of the bootstrapped rootogram
 \captionof{figure}[Abbrviated Caption]{The rootogram of the two-component mixture model shows the distribution of posterior probabilities with reference to the binary latent variable, for all observations used to fit the model. The model indicates higher confidence in the identification of clusters and the classification of individual observations when the observations accumulate near the limits of the rootogram, at 0 and 1. Conversely, greater mass at the center of the rootogram represents observations that are less confidently classified.}
 \end{figure}
 
-\begin{figure}
+\begin{figure}[H]
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}
 
+{\centering \includegraphics[width=\maxwidth]{figure/pseudo_mixture_monovar_b-1} 
+
+}
+
+
+
+\end{knitrout}
 % TODO add description/explanation of how the model has difficulty estimating the functions at/after the points where the functions cross one another.
 \captionof{figure}[Abbrviated Caption]{The estimated monotone functions of the two-component mixture model, with overlaid, dotted black lines representing the true functions. The confidence intervals are generated by 1000 iterations of an ordinary (non-parametric) bootstrap.} \label{fig:pseudo_mixture_monovar_b}
 \end{figure}
 
-\begin{figure} 
-
+% \begin{figure} 
+% <pseudo_mixture_monovar_c, fig.keep='high', warning=F, echo=FALSE, fig.align='center', eval=FALSE, fig.height=3>
+% plot(m2, boot_CI=build_CI_cond(m2, R = boots), ylim=c(-1000,1000), palet="Dark2", root_scale="sqrt", subplot=2) + 
+%   geom_line(data = df_2[df_2$cat==1,], aes(X, Yt), linetype="dotted") +
+%   geom_line(data = df_2[df_2$cat==2,], aes(X, Yt), linetype="dotted")
+% 
+% # plot(m2boot@object, boot_CI=build_CI_trad(m2boot),  palet="Dark2", root_scale="sqrt", subplot=2) + 
+% #   geom_line(data = df_2[df_2$cat==1,], aes(X, Yt), linetype="dotted") +
+% #   geom_line(data = df_2[df_2$cat==2,], aes(X, Yt), linetype="dotted")
+% 
+% @
 % TODO add description/explanation of how the model has difficulty estimating the functions at/after the points where the functions cross one another.
-\captionof{figure}[Abbrviated Caption]{The estimated monotone functions of the two-component mixture model, now with confidence intervals generated via 1000 iterations of the conditional bootstrap.}
-\end{figure}
+% \captionof{figure}[Abbrviated Caption]{The estimated monotone functions of the two-component mixture model, now with confidence intervals generated via 1000 iterations of the conditional bootstrap.}
+% \end{figure}
 
 As can be seen from figure (\ref{fig:pseudo_mixture_monovar_b}), the algorithm is more uncertain of the monotone regression shapes where the true data generating functions overlap. 
 
@@ -850,17 +952,17 @@ We continue the demonstration with the inclusion of linear effects. For the next
   Y_{3} &= -4 + 1.5 \cdot (X_1^3) - 2\cdot X_2 - X_3 + 2\cdot X_4 + 4\cdot X_5 + \epsilon_3 \\
   Y_{4} &= 4 + 0.1 \cdot (X_1^5) - 3\cdot X_2 - 3\cdot X_3 - 3\cdot X_4 + 3\cdot X_5 + \epsilon_4 \\
 \end{align*}
-
 where 
-
 \begin{equation*}
-\begin{aligned}[c]
+\begin{aligned}
   \epsilon_1 &\sim N(0,3) \\
   \epsilon_2 &\sim N(0,10) \\
   \epsilon_3 &\sim N(0,3) \\
   \epsilon_4 &\sim N(0,7) \\
 \end{aligned}
-\begin{aligned}[c]
+\qquad
+\qquad
+\begin{aligned}
   X_1 &\sim Uniform(-5,5) \\
   X_2 &\sim Uniform(-10,10) \\
   X_3 &\sim Uniform(-100,100) \\
@@ -876,24 +978,135 @@ We proceed to estimate a mixture of partial linear regressions (\ref{m3}), with 
   Y = \sum_{k=1}^{4}\pi_k (g_{k} (X_1) \ +\  \beta_{0,k} \ +\ \beta_{1,k}\cdot X_2 \ +\ \beta_{2,k}\cdot X_3 \ +\ \beta_{3,k}\cdot X_4 \ +\ \beta_{4,k}\cdot X_5 \ +\ \epsilon_k)
 \end{equation}
 
+Tables \ref{t1} through \ref{t5} show 89 \% confidence intervals for the estimates of the linear effects and priors of model \ref{m3}. It should be noted that, since these estimates are derived from the nonparametric bootstrap, there are no constraints on the shape of the estimate distributions, meaning they may not be either symmetric or unimodal, and information is therefore lost by summarizing their complete distributions by means and confidence intervals. Moreover, since each bootstrap repetition returns an associated set of estimates, there is known covariance between the estimates. One may represent both full distributions and covariance of up to three linear effects at a time with three-dimensional plots of the covariate space, though with more than three linear effects the interpretation of such plots becomes more difficult. We choose no to report the covariance structure here, though users may find it useful in other applications.
+
 % TODO include chart comparing distributions of parameters and g() for increasing n, i.e., n = 400, 800, 2000,
 
-\begin{figure}
+\begin{figure}[H]
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}
 
+{\centering \includegraphics[width=\maxwidth]{figure/pseudo_mixture-1} 
+
+}
+
+
+
+\end{knitrout}
 \captionof{figure}[Abbrviated Caption]{The rootogram of the four-component mixture model represented by equation \ref{m3}.}
 \end{figure}
 
-\begin{figure}
+\begin{figure}[H]
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}
 
+{\centering \includegraphics[width=\maxwidth]{figure/pseudo_mixture_b-1} 
+
+}
+
+
+
+\end{knitrout}
 \captionof{figure}[Abbreviated Caption]{The estimated monotone functions of the four-component mixture model, with overlaid, dotted black lines representing the true functions. The confidence intervals are generated by 1000 iterations of an ordinary (non-parametric) bootstrap.}
 \end{figure}
 
 
-\begin{figure}
+% \begin{figure}
+% <pseudo_mixture_c, warning=F, echo=FALSE, fig.align='center', eval=FALSE, fig.height=3>
+% 
+% plot(m3, boot_CI=build_CI_cond(m3, R=30, CI = 0.95), ylim=c(-250,250), palet="Dark2", root_scale="sqrt", subplot=2) + 
+%   geom_line(data = df_t, aes(X1, Y1), linetype="dotted") +
+%   geom_line(data = df_t, aes(X1, Y2), linetype="dotted") +
+%   geom_line(data = df_t, aes(X1, Y3), linetype="dotted") +
+%   geom_line(data = df_t, aes(X1, Y4), linetype="dotted") 
+% 
+% @
+% \captionof{figure}[Abbrviated Caption]{The estimated monotone functions of the two-component mixture model, now with confidence intervals generated via 1000 iterations of the conditional bootstrap.}
+% \end{figure}
 
-\captionof{figure}[Abbrviated Caption]{The estimated monotone functions of the two-component mixture model, now with confidence intervals generated via 1000 iterations of the conditional bootstrap.}
-\end{figure}
 
+\begin{table}[!htb]
+    \begin{minipage}{.5\linewidth}
+      \caption{Component 1} \label{t1}
+      \centering 
+\begin{tabular}{lrrr}
+\toprule
+  & lower & upper & mean\\
+\midrule
+(Intercept) & -11.91 & -3.21 & -7.37\\
+X2 & -2.63 & -0.21 & -1.43\\
+X3 & -1.11 & -0.90 & -1.01\\
+X4 & 1.95 & 2.13 & 2.04\\
+X5 & 3.91 & 4.12 & 4.02\\
+\addlinespace
+sigma & 61.00 & 68.74 & 65.48\\
+\bottomrule
+\end{tabular} \end{minipage}%
+    \begin{minipage}{0.7\linewidth}
+      \centering
+        \caption{Component 2} \label{t2} 
+\begin{tabular}{lrrr}
+\toprule
+  & lower & upper & mean\\
+\midrule
+(Intercept) & -0.71 & 19.79 & 9.91\\
+X2 & 0.20 & 3.45 & 1.93\\
+X3 & -1.67 & -1.10 & -1.44\\
+X4 & -1.17 & -0.59 & -0.88\\
+X5 & 0.53 & 0.94 & 0.72\\
+\addlinespace
+sigma & 123.67 & 141.23 & 131.94\\
+\bottomrule
+\end{tabular} \end{minipage} 
+\end{table}\begin{table}[!htb]
+    \begin{minipage}{.5\linewidth}
+      \caption{Component 3} \label{t3}
+      \centering 
+\begin{tabular}{lrrr}
+\toprule
+  & lower & upper & mean\\
+\midrule
+(Intercept) & -24.97 & -8.91 & -17.84\\
+X2 & 0.32 & 2.92 & 1.73\\
+X3 & 1.79 & 2.03 & 1.89\\
+X4 & -2.14 & -1.93 & -2.04\\
+X5 & 1.95 & 2.24 & 2.10\\
+\addlinespace
+sigma & 91.67 & 102.44 & 97.09\\
+\bottomrule
+\end{tabular} \end{minipage}%
+    \begin{minipage}{0.7\linewidth}
+      \centering
+        \caption{Component 4} \label{t4} 
+\begin{tabular}{lrrr}
+\toprule
+  & lower & upper & mean\\
+\midrule
+(Intercept) & -6.48 & 5.21 & -1.66\\
+X2 & -4.64 & -2.18 & -3.22\\
+X3 & -3.18 & -3.02 & -3.09\\
+X4 & -3.20 & -3.05 & -3.12\\
+X5 & 2.80 & 3.05 & 2.94\\
+\addlinespace
+sigma & 67.87 & 79.18 & 74.42\\
+\bottomrule
+\end{tabular} \end{minipage} 
+\end{table}\begin{table}[!htb]
+    \centering
+    \begin{minipage}{.5\linewidth}
+      \caption{Priors} \label{t5}
+      \centering 
+\begin{tabular}{rrr}
+\toprule
+lower & upper & mean\\
+\midrule
+0.22 & 0.26 & 0.24\\
+0.21 & 0.26 & 0.23\\
+0.25 & 0.28 & 0.27\\
+0.25 & 0.28 & 0.26\\
+\bottomrule
+\end{tabular} \end{minipage}%
+\end{table}
 
 
 
@@ -902,15 +1115,92 @@ We proceed to estimate a mixture of partial linear regressions (\ref{m3}), with 
 
 \subsection{Algorithm Comparisons with Simulated Data}
 
-In such instances, the proposed algorithm is demonstrably tighter around the true functions than the algorithm of Zhang et al. 
+Here, we empirically compare the behaviour of our proposed model with that of the Zhang et al. model. We fit both models on four separate datasets, each with two components. The first dataset is generated from a model where the true priors of the mixture components $\pi_k$, as well as the true variance of those components $\sigma_k$, are functions of observed covariates, i.e., $\pi_k(X)$ and $\sigma_k(X)$. The second dataset is generated from a model where the true priors and true variances, $\pi_k$ and $\sigma_k$, are constant. The third dataset is generated from a model with constant true priors and true variances, as well as much ``jagged'' true underlying functions. The fourth dataset, again, is generated from a model with constant true priors and true variances, as well as true underlying functions that twice intersect. Because of the label-switching problem, we choose to plot and compare the resulting fitted models without reference to the component labels. Instead, we overlay component mean estimates sequentially in order to try to compare the general bias and variance behaviours of the two respective model classes. In each pair of comparison plots, the true underlying functions are represented by dotted black lines.
 
-(INCLUDE COMPARISON PLOTS HERE).
+The models resulting from the first dataset, seen in figure \ref{comparison}, show that the Zhang et al. model produces tight fits around the true functions, with very low variance. Our proposed model also fits tightly around the true functions when its component estimates are well-separated, but it frequently encounters a component-switching problem where the function estimate is in fact a hybrid of the underlying true functions. When the underlying model has constant true priors and variances, as in figure \ref{comparison_2}, our model is slightly better behaved, although the component-switching problem remains.
+
+In the third dataset, shown in figure \ref{comparison_3}, our model follows the jagged breaks and changes in the true underlying functions with no visible increase in variance. The Zhang et al. model, on the other hand, become severely biased and confidently estimates an incorrect pair of functions. When the Zhang et al. model does estimate the correct function neighbourhood, it smooths over the sharp edges of the underlying function. In the fourth dataset, shown in figure \ref{comparison_4}, where the true functions intersect, the Zhang et al. model confidently estimates smooth, non-intersecting functions. Our model, on the other hand, correctly identifies the function intersection.
+
+
+
+
+
+%(INCLUDE COMPARISON PLOTS HERE).
+\begin{figure}[H]
+\centering
+    \textbf{Algorithm Comparison for Conditional True Priors and Variances}\par\medskip
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}
+
+{\centering \includegraphics[width=0.49\linewidth]{figure/comparison-1} 
+\includegraphics[width=0.49\linewidth]{figure/comparison-2} 
+
+}
+
+
+
+\end{knitrout}
+\captionof{figure}[Abbrviated Caption]{The Zhang et al. model and the authors' model, fit to data generated from an underlying model with conditional true priors and variances.} \label{fig:comparison}
+\end{figure}
+
+
+
+\begin{figure}[H]
+\centering
+    \textbf{Algorithm Comparison for Separated True Functions}\par\medskip
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}
+
+{\centering \includegraphics[width=0.49\linewidth]{figure/comparison_2-1} 
+\includegraphics[width=0.49\linewidth]{figure/comparison_2-2} 
+
+}
+
+
+
+\end{knitrout}
+\captionof{figure}[Abbrviated Caption]{The Zhang et al. model and the authors' model, fit to data generated from an underlying model with constant true priors and variances.} \label{fig:comparison_2}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+    \textbf{Algorithm Comparison for Jagged True Functions}\par\medskip
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}
+
+{\centering \includegraphics[width=0.49\linewidth]{figure/comparison_3-1} 
+\includegraphics[width=0.49\linewidth]{figure/comparison_3-2} 
+
+}
+
+
+
+\end{knitrout}
+\captionof{figure}[Abbrviated Caption]{The Zhang et al. model and the authors' model, fit to data generated from an underlying model with constant true priors and variances, as well as ``jagged'' underlying true functions.} \label{fig:comparison_3}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+    \textbf{Algorithm Comparison for Overlapping True Functions}\par\medskip
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}
+
+{\centering \includegraphics[width=0.49\linewidth]{figure/comparison_4-1} 
+\includegraphics[width=0.49\linewidth]{figure/comparison_4-2} 
+
+}
+
+
+
+\end{knitrout}
+\captionof{figure}[Abbrviated Caption]{The Zhang et al. model and the authors' model, fit to data generated from an underlying model with constant true priors and variances, as well as intersecting underlying true functions.} \label{fig:comparison_4}
+\end{figure}
 
 
 
 \subsection{Real Data: Global Life Expectancy }
 
-In this section, we apply the mixture of monotone regressions to global life expectancy data. Consider data on 'GDP per person' and 'Life expectancy' for all countries between the years 1960 and 2018, drawn from the free online resources of the World Bank [@worldbank]. Specifically, the data consists of $n$ observations $(y_1, \vec{x_1}),...,(y_n,\vec{x_n})$, where $Y$ represents Life Expectancy and the vector $\vec{X}$ represents both GDP and Year. 
+In this section, we apply the mixture of monotone regressions to global life expectancy data. Consider data on 'GDP per person' and 'Life expectancy' for all countries between the years 1960 and 2018, drawn from the free online resources of the World Bank (\cite{worldbank}). Specifically, the data consists of $n$ observations $(y_1, \vec{x_1}),...,(y_n,\vec{x_n})$, where $Y$ represents Life Expectancy and the vector $\vec{X}$ represents both GDP and Year. 
 
 Moreover, this data has two properties that are very common in real world data:
 \begin{enumerate}[noitemsep] 
@@ -920,7 +1210,7 @@ Moreover, this data has two properties that are very common in real world data:
 
 On a first pass visualization of this data, we find a mostly linear relationship between Life Expectancy \& Year (\ref{lexy}), and a mostly logarithmic relationship between Life Expectancy \& GDP (\ref{lexgdp}). 
 
-\begin{figure}
+\begin{figure}[H]
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}
 
@@ -935,7 +1225,7 @@ On a first pass visualization of this data, we find a mostly linear relationship
 \captionof{figure}[Abbrviated Caption]{The relationships between Life Expectancy and time are largely linear across all global regions. Sub-saharan Africa uniquely demonstrates what appears to be a cubic relationship over time.} \label{lexy}
 \end{figure}
 
-\begin{figure}
+\begin{figure}[H]
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}
 
@@ -949,7 +1239,7 @@ On a first pass visualization of this data, we find a mostly linear relationship
 \captionof{figure}[Abbrviated Caption]{The relationships between Life Expectancy and GDP per capita are largely log-linear across global regions. Nearly all regions feature brief noisy sections surrounded by notably larger smooth sections.}  \label{lexgdp}
 \end{figure}
 
-For the purposes of demonstration, we choose to model this data without log-transforming the GDP data in order to preserve its highly non-linear relationship with Life Expectancy. We proceed by building two step models: with and without an intercept, and each with `GDP` as the monotone covariate. Each model is in fact a series of 21 mixture models, 3 for each of $k = 1,...,7$. These models have the form of \ref{m6} and \ref{m7} respectively.
+For the purposes of demonstration, we choose to model this data without log-transforming the GDP data in order to preserve its highly non-linear relationship with Life Expectancy. We proceed by building two step models: with and without an intercept, and each with `GDP` as the monotone covariate. Each model is in fact a series of 30 mixture models, 3 for each of $k = 1,...,10$. These models have the form of equations \ref{m6} and \ref{m7} respectively.
 
 \begin{equation} \label{m6}
   Y = \sum_{k=1}^{K}\pi_k (g_{k} (GDP) \ +\  \beta_{k}\cdot Year \ +\ \epsilon_k)
@@ -972,47 +1262,176 @@ For each series, we plot the AIC and BIC per $k$, the rootogram of the model wit
 
 
 
-\begin{figure}
+\begin{figure}[H]
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}
 
-\captionof{figure}[Abbreviated Caption]{Here we observe the various model selection metrics -- AIC, BIC and ICL -- for models represented by equation \ref{m6}, constructed with each of $k$ components. Below, we have the estimated monotone components of the model with lowest AIC.}  
+{\centering \includegraphics[width=\maxwidth]{figure/le_mod_plot1-1} 
+
+}
+
+
+
+\end{knitrout}
+\captionof{figure}[Abbreviated Caption]{Here we observe the various model selection metrics -- AIC, BIC and ICL -- for models represented by equation \ref{m6}, constructed with each of $k$ components.}  
 \end{figure}
 
-\begin{figure}
+\begin{figure}[H]
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}
 
-\captionof{figure}[Abbreviated Caption]{Here we observe the various model selection metrics -- AIC, BIC and ICL -- for models represented by equation \ref{m7}, constructed with each of $k$ components. Below, we have the estimated monotone components of the model with lowest AIC.}
+{\centering \includegraphics[width=\maxwidth]{figure/le_mod_plot1_a-1} 
+
+}
+
+
+
+\end{knitrout}
+\captionof{figure}[Abbreviated Caption]{Here we observe the rootogram of model \ref{m6} with the lowest AIC. The high proportion of observations classed near the outer limits of 0 and 1 indicate a well-separated model.}  
+\end{figure}
+
+\begin{figure}[H]
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}
+
+{\centering \includegraphics[width=\maxwidth]{figure/le_mod_plot1_b-1} 
+
+}
+
+
+
+\end{knitrout}
+\captionof{figure}[Abbreviated Caption]{Here we observe the monotone functions for all components in the fitted model \ref{m6} with lowest AIC. Observed values are overlaid in the colour of the component to which each country is assigned. Since the Y-value only represents the additive contribution of the monotone term, its range spans across 0 and into negative real numbers.}  
+\end{figure}
+
+\begin{figure}[H]
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}
+
+{\centering \includegraphics[width=\maxwidth]{figure/le_mod_plot2-1} 
+
+}
+
+
+
+\end{knitrout}
+\captionof{figure}[Abbreviated Caption]{Here we observe the various model selection metrics -- AIC, BIC and ICL -- for models represented by equation \ref{m7}, constructed with each of $k$ components. }
+\end{figure}
+
+\begin{figure}[H]
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}
+
+{\centering \includegraphics[width=\maxwidth]{figure/le_mod_plot2_a-1} 
+
+}
+
+
+
+\end{knitrout}
+\captionof{figure}[Abbreviated Caption]{Here we observe the rootogram of model \ref{m7} with the lowest AIC. Again, the high proportion of observations classed near the outer limits of 0 and 1 indicate a well-separated model.}
+\end{figure}
+
+\begin{figure}[H]
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}
+
+{\centering \includegraphics[width=\maxwidth]{figure/le_mod_plot2_b-1} 
+
+}
+
+
+
+\end{knitrout}
+\captionof{figure}[Abbreviated Caption]{Here we observe the monotone functions for all components in the fitted model \ref{m7} with lowest AIC. Observed values are overlaid in the colour of the component to which each country is assigned. Again, since the Y-value only represents the additive contribution of the monotone term, its range spans across 0 and into negative real numbers.}
 \end{figure}
  
 
-Next, we plot the distribution of clusters within the lowest-AIC model of each step-model series, projected onto a world map. In these world map plots, the colors of each cluster span a spectrum from white to full-color, representing the strength of the posterior and the confidence of the model in placing a given country within a given cluster. The world-maps indicate what the rootograms had previously indicated, namely that the resulting models are extremely confident about the clustering of nearly all countries.
+Next, we would typically plot the distribution of clusters within the lowest-AIC model of each step-model series, projected onto a world map. For demonstration purposes, we instead plot the 4-component model from each series. In these world map plots, the colors of each cluster span a spectrum from white to full-color, representing the strength of the posterior and the confidence of the model in placing a given country within a given cluster. The world-maps indicate what the rootograms had previously indicated, namely that the resulting models are extremely confident about the clustering of nearly all countries.
 
-\begin{figure}
+\begin{figure}[H]
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}
 
+{\centering \includegraphics[width=\maxwidth]{figure/worldmaps1-1} 
+
+}
+
+
+
+\end{knitrout}
 \captionof{figure}[Abbreviated Caption]{Here we observe the world map with colour code corresponding to the results of model \ref{m6}.}
 \end{figure}
 
-\begin{figure}
+\begin{figure}[H]
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}
 
+{\centering \includegraphics[width=\maxwidth]{figure/worldmaps2-1} 
+
+}
+
+
+
+\end{knitrout}
 \captionof{figure}[Abbreviated Caption]{Here we observe the world map with colour code corresponding to the results of model \ref{m7}.}
 \end{figure}
 
 
-Finally, we refit model \ref{m6} while excluding all observations from Australia in order to demonstrate the predictive capacities of the mixture model. As stated previously, in section \ref{prediction}, there are two possible contexts in which one might use the mixture model predictively. One may have a complete observation or set of observations, e.g., the \texttt{Year}, \texttt{GDP} and \texttt{Life Expectancy} data for Australia over several years, in which case one could use the mixture model to generate a set of posterior probabilities representing the probability of Australia belonging to each of the model clusters. Alternately, one may have an incomplete observation or set of observations, e.g., the \texttt{Year} and \texttt{GDP} data (but not \texttt{Life Expectancy}) for Australia over several years, in which case one could use the mixture model to generate a conditional marginal distribution of \texttt{Life Expectancy} for Australia.
+Finally, we iteratively refit model \ref{m6} while excluding all observations from a series of countries -- Argentina, Canada, Iran, Senegal, Switzerland, Thailand, chosen to represent a variety of countries from different regions -- in order to demonstrate the predictive capacities of the mixture model. As stated previously, in section \ref{prediction}, there are two possible contexts in which one might use the mixture model predictively. One may have a complete observation or set of observations, e.g., the \texttt{Year}, \texttt{GDP} and \texttt{Life Expectancy} data for a given country over several years, in which case one could use the mixture model to generate a set of posterior probabilities representing the probability of that country belonging to each of the model clusters. Alternately, one may have an incomplete observation or set of observations, e.g., the \texttt{Year} and \texttt{GDP} data (but not \texttt{Life Expectancy}) for a country over several years, in which case one could use the mixture model to generate a conditional marginal distribution of \texttt{Life Expectancy} for the given country.
 
+
+\begin{figure}[H]
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}
+
+{\centering \includegraphics[width=4cm,height=4cm]{figure/predictions-1} 
+\includegraphics[width=4cm,height=4cm]{figure/predictions-2} 
+\includegraphics[width=4cm,height=4cm]{figure/predictions-3} 
+\includegraphics[width=4cm,height=4cm]{figure/predictions-4} 
+\includegraphics[width=4cm,height=4cm]{figure/predictions-5} 
+\includegraphics[width=4cm,height=4cm]{figure/predictions-6} 
+
+}
+
+
+
+\end{knitrout}
+\captionof{figure}[Abbreviated Caption]{Marginal distributions of Life Expectancy over time for each country, corresponding to the results of model \ref{m6}. Observed Life Expectancy values are superimposed in black.}
+\end{figure}
+
+
+The marginal distributions produced by model \ref{m6} illustrate the flexibility of the model, and at the same time highlight some of its crucial assumptions. First, the \emph{must-link} constraints, which form the groupings of the model and ensure that all observations from a single country are clustered together, assume rather minimally that observations from a single country are \emph{i.i.d.} and drawn from some common underlying distribution. In this case, that is an untenable assumption since observations were in fact drawn sequentially, and one should therefore assume autocorrelation among the observations, as with any time-series data. 
+
+Second, as discussed in section \ref{fmrs}, the model is constructed such that the posterior probabilities of an observation ($\boldsymbol{\Lambda}_i$ for some $i$, to keep with earlier notation) depend on covariates $\boldsymbol{X}_i$ only through dependent variable $Y_i$. The simplicity of this dependence structure is advantageous, but for the predictive task of determining a marginal distribution of $Y$ for an observed $\boldsymbol{X} = \boldsymbol{x}$, the resulting distribution is a mixture proportionate only to the uninformed priors. Thus, although in model \ref{m6} countries are clearly being clustered with respect to economic development and therefore, in some way, with respect to GDP per capita, the marginal distributions of Life Expectancy for a wealthy country such as Switzerland and a poorer country such as Senegal will have the same mixing proportions regardless of observed GDP per capita. A clear solution to this would be to model the priors $\boldsymbol{\pi}$ of the mixture model as additionally dependent on covariates $\boldsymbol{X}$, as is typically done in mixture-of-expert models (c.f., section \ref{fmrs}).
 
 
 
 \section{Discussion}
 
-\subsection{Applications}
+The model presented in this paper provides a general and robust option for representing mixtures of regressions where some, or all, of the regression terms are non-parametric, monotone functions. There are several advantages to this implementation which make it simpler and more versatile. First, this model generalizes univariate mixtures of monotone regressions to the multivariate case, where any finite number of both linear and monotone terms can be specified within each mixture component. Second, this model is free of any tuning parameters in the component regression functions, which allows the overall model to be computationally simpler and leaves fewer modelling decision to the user. Finally, this model fits each monotone term in its mixture components in a single step, thereby avoiding the bias inherent in a two-step process, and giving the model flexibility in fitting data for which the true underlying functions are jagged and/or intersect. This flexibility is especially important for modelling in contexts where assuming that the model components are well separated or divisible by a hyperplane is unrealistic.
+
 
 \subsection{Weaknesses}
 
+Although the model presented in this paper makes some substantial improvements on its predecessor, the Zhang et al. model, these improvements are conditional upon the data being modelled. The Zhang et al. model still has lower variance in contexts where the true underlying components have sufficiently smooth monotone terms and are sufficiently well-separated. When these are reasonable assumptions to make, the Zhang et al. model is clearly preferable. Moreover, given that users may have little reason to believe that these assumptions are or are not reasonable, deciding which model to use may be difficult.
+
+Another, conext-specific weakness of our model is that the monotone component of each regression is not a smooth function but rather a step-wise function. For cases in which a smooth function is required, this is prohibitive. However, where smooth monotone functions are not required, the advantages of our model may outweigh this cost.
+
 \subsection{Future Developments}
+
+There are three clear directions for future development with respect to the model presented in this paper. First, the model could be generalized to accept alternate types of shape constraints -- for example, convex or \emph{k}-monotone constraints. This would greatly extend the model's applicability, especially in cases where model components might combine nonparametric terms with different types of shape constraint.
+
+Second, the model could be generalized to fit regressions with non-normal conditional errors. Since mixtures of generalized linear models have previously been implemented (see, for example, \cite{mixglms}) and the MLE isotonic estimator has already been generalized to non-normal errors (see \cite{genpava}), we expect that this would be a simple practical extension. The clearest advantage to such an extension would be the ability to model mixtures of partially monotone logistic regressions. Such models would have ready applications in, for example, epidemiological studies like \cite{morton} where the outcomes are binary disease states instead of continuous disease severities. 
+
+Finally, the model could be generalized to fit mixtures with coefficient-dependent priors, as do the model of Zhang et al. and other variations of the mixture-of-experts model. Although such models do not necessarily have interpretable prior parameters, they are much better suited to applications that place high importance on prediction.
+
 
 
 \section*{Acknowledgments}
 
-Here I acknowledge all my homies.
+I would like to thank: Drs. Holger Dette, Runze Li, and Mian Huang for providing the necessary code to run the Zhang et al. algorithm. Dr. Matthias L{\"o}ffler for initially suggesting the topic of this manuscript, and for pushing me in the right direction on all the occasions when I seemed to have reached a dead end. The faculty of the Master's in Biostatistics at the UZH for two intense, creative and academically stimulating years, and for shepherding me on an academic journey from a state of statistical ignorance to a state of somewhat less statistical ignorance. Dr. Torsten Hothorn in particular for agreeing to sponsor this master thesis and thereby demonstrating significant trust that I would return with something useful. My family for supporting me through an unexpected number of video calls and a global pandemic. My friends in Z{\"u}rich for making 6 months writing a thesis in home-office not only something I don't regret, but something I would do again.
+
 
 \bibliography{mono}
 
@@ -1020,31 +1439,107 @@ Here I acknowledge all my homies.
 
 \begin{appendices}
 
-\chapter{Asymptotic Behaviour of Partially Linear Models with Monotone Constraints} \label{abplmmc}
+\section{Asymptotic Behaviour of Partially Linear Models with Monotone Constraints} \label{abplmmc}
 
-As discussed in (REF SECTION), the asymptotic behaviour of partially linear models with monotone constraints described by \cite{guangcheng} requires that the following assumptions hold:
+As discussed in section \ref{plmmc}, the asymptotic behaviour of partially linear models with monotone constraints described by \cite{guangcheng} requires that the assumptions below hold.
 
-page 1983 guang cheng
+Let the estimators $\hat{\beta}_n, \hat{h}_1, ..., \hat{h}_J$ be defined as the minimizer of 
 
-\chapter{R Code}
+\begin{equation} \label{guangassum}
+   S_n(\beta, h_1, ..., h_j) \ =\ n^{-1} \sum_{i=1}^{n}(Y_i - X'_i\beta - \sum_{j=1}^{J}h_j(W_{ij}))^2
+\end{equation}
 
-
-All results in this paper were produced by an extension of Flexmix (CITE), a flexible implementation of generalized mixture models written by FLEISCH and GRUN. The package provides a framework for implementing specific types of mixture models based on a central, universal framework. It is thus intended to allow users to elaborate a specific estimator or "driver" for the modeling of mixture components, while the more abstract behaviours are managed by the Flexmix code. More specifically, Flexmix implements:
+where each $h_j$ is a monotone function with bounded derivative and $\int h_j(w_j)dw_j = 0$. Then, the following are regularity conditions for $1 \leq j \leq J$:
 
 \begin{enumerate}
-  \item The universal functions of the EM algorithm for assigning prior values $\pi_k$ to each of the mixture components and posterior values $\mathcal{L}_i$ to each of the observations upon each iteration of the EM algorithm;
+  \item The function $h_j$ satisfies the condition that
+  \begin{equation}
+   \text{inf}_{|w_j - w'_j|\geq \delta} \ |h_j(w_j) - h_j(w'_j)| \ \geq \ C_1 \delta^{\gamma}
+  \end{equation}
+for any $\delta > 0$ and some constants $C_1, \gamma > 0$.
+
+  \item The density for $W_j$, denoted as $p_{w_j}$, is assumed to be bounded away from zero and infinity, and fulfills the below Lipschitz condition
+  \begin{equation}
+   \text{sup}_{-1 \leq w_j, w'_j \leq 1} \ |p_{w_j}(w_j) - p_{w_j}(w'_j)| \ \leq \ M |w_j - w'_j|^{\rho}
+  \end{equation}
+for some constants $M, \rho > 0$.
+
+  \item The function $\zeta_j(w) \equiv E(X|W_j = w)$ satisfies the condition
+  \begin{equation}
+   || \zeta_j(w_j) - \zeta_j(w'_j) || \leq \ C_2 |w_j - w'_j|
+  \end{equation}
+  for some constant $C_2 > 0$.
+  
+  \item $E(X - \sum_{j=1}^{J}E(X|W_j))^{\otimes 2}$ is strictly positive.
+\end{enumerate}
+
+\section{Flexmix Extension}
+
+
+All results in this paper were produced by an extension of Flexmix, a flexible implementation of generalized finite mixture models created by Bettina Grun and Friedrich Leisch (\cite{flexmix}). The package provides a framework for implementing specific types of mixture models based on a central, universal framework. It is thus intended to allow users to elaborate a specific estimator or ``driver'' for the modeling of mixture components, while the more abstract behaviours are managed by the Flexmix backend. More specifically, Flexmix implements:
+
+\begin{enumerate}
+  \item The universal functions of the EM algorithm for assigning prior values $\pi_k$ to each of the mixture components and posterior values $\Lambda_i$ to each of the observations upon each iteration of the EM algorithm;
   \item Threshold constants for the convergence of the EM algorithm;
   \item Restrictions on the model estimate, e.g., restricting components to have an estimated prior above a certain threshhold;
   \item Ordinary- and parametric-bootstrap methods for the estimation of confidence intervals with respect to each component.
 \end{enumerate}
 
-Conversely, the user must provide a model estimator and a model object with a log-likelihood method, logLik() (FONT), which returns the density of an observation given a component's parameters. In the case of mixtures of regressions, this additionally implies a prediction function, predict() (FONT), which gives an expected value of an observation's dependent variable given the observed independent variables.
+Conversely, the user must provide a model estimator and a model object with a log-likelihood method, \texttt{logLik()}, which returns the density of an observation given a component's parameters, and a prediction function, \texttt{predict()}, which gives an expected value of an observation's dependent variable given the observed independent variables.
 
-WHAT ELSE DOES FLEXMIX DO FOR US?
+To implement the Flexmix extension, one must call \texttt{flexmix()} from the Flexmix package with \texttt{mono\_reg()} as the model argument. E.g., the following call to \texttt{flexmix()} produces a model with 6 components, each of which is a partial linear model regressing \texttt{Y} on all other 
+variables of \texttt{df}, excluding an intercept. The \texttt{mon\_inc\_index} argument to \texttt{mono\_reg()} instructs the function to estimate an isotonic function on the second independent variable in \texttt{df}.
 
-The code for the extension of Flexmix for modelling mixtures of partially-linear monotone regressions is included below. The first code block implements the partial linear model with monotone shape constraints; the second code block integrates the partial linear model with the Flexmix framework; the third code block provides additional functions for the visualization of results; the fourth code block implements the "conditional bootstrap" described in section (LINK).
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{mod} \hlkwb{<-} \hlkwd{flexmix}\hlstd{(Y} \hlopt{~} \hlstd{.}\hlopt{-}\hlnum{1}\hlstd{,} \hlkwc{data} \hlstd{= df,} \hlkwc{k} \hlstd{=} \hlnum{6}\hlstd{,} \hlkwc{model} \hlstd{=} \hlkwd{mono_reg}\hlstd{(}\hlkwc{mon_inc_index} \hlstd{=} \hlnum{2}\hlstd{))}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
 
-initialize solution (CITE Finite Mixture Model Diagnostics Using Resampling Methods)
+It should be noted that the indexing arguments passed to \texttt{mono\_reg()} are indices of the design matrix constructed by the formula passed to \texttt{flexmix()}, so they change based on the design matrix. For example, without an intercept, \texttt{mono\_inc\_index = 2} refers to the 2nd independent variable of the data frame; when an intercept \emph{is} included, \texttt{mono\_inc\_index = 2} refers to the 1st independent variable of the data frame \texttt{df}. It is therefore safer and recommended that the user specify the monotone terms by name using the \texttt{mono\_inc\_names} or \texttt{mono\_dec\_names} arguments, as below.
+
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{mod} \hlkwb{<-} \hlkwd{flexmix}\hlstd{(Y} \hlopt{~} \hlstd{.,} \hlkwc{data} \hlstd{= df,} \hlkwc{k} \hlstd{=} \hlnum{6}\hlstd{,} \hlkwc{model} \hlstd{=} \hlkwd{mono_reg}\hlstd{(}\hlkwc{mon_inc_names} \hlstd{=} \hlstr{"Var_2"}\hlstd{))}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+The extension allows the user to include any number of isotonic and/or antitonic (monotone-non-decreasing, monotone-non-increasing) variables in the call to \texttt{mono\_reg}, as demonstrated below.
+
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{mod} \hlkwb{<-} \hlkwd{flexmix}\hlstd{(Y} \hlopt{~} \hlstd{.,} \hlkwc{data} \hlstd{= df,} \hlkwc{k} \hlstd{=} \hlnum{6}\hlstd{,} \hlkwc{model} \hlstd{=} \hlkwd{mono_reg}\hlstd{(}\hlkwc{mon_inc_names} \hlstd{=}
+                \hlkwd{c}\hlstd{(}\hlstr{"Var_2"}\hlstd{,} \hlstr{"Var_4"}\hlstd{),} \hlkwc{mon_dec_names} \hlstd{=} \hlkwd{c}\hlstd{(}\hlstr{"Var_3"}\hlstd{,} \hlstr{"Var_6"}\hlstd{)))}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+Flexmix also allows the construction of multiple mixture models within a single object. The following call to \texttt{stepFlexmix()} builds 25 mixture models. For each of $k$ equal to $1$ through $5$ components, \texttt{nrep} specifies the construction of 5 models. Each model contains 2 monotone components -- a monotone-non-decreasing, or isotonic, relationship between \texttt{Y} and \texttt{Var\_2}, and a monotone-non-increasing, or antitonic, relationship between \texttt{Y} and \texttt{Var\_3}.
+
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{m2} \hlkwb{<-} \hlkwd{stepFlexmix}\hlstd{(Y} \hlopt{~} \hlstd{.,} \hlkwc{data} \hlstd{= df,} \hlkwc{model} \hlstd{=} \hlkwd{mono_reg}\hlstd{(}\hlkwc{mon_inc_names} \hlstd{=}
+                \hlstr{"Var_2"}\hlstd{,} \hlkwc{mon_dec_names} \hlstd{=} \hlstr{"Var_3"}\hlstd{),} \hlkwc{k} \hlstd{=} \hlnum{1}\hlopt{:}\hlnum{5}\hlstd{,} \hlkwc{nrep} \hlstd{=} \hlnum{5}\hlstd{)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+
+A notable weakness in the Flexmix architecture is that the structure of all components must be specified identically within a given model. Thus, whereas in theory one could fit a mixture of monotone regressions where different components have different monotone directions -- e.g., the first component is monotone non-decreasing and the second component is monotone non-increasing -- this is not possible with the current instantiation of Flexmix. 
+
+For further discussion of the use of the Flexmix package, see the guides at \url{https://ro.uow.edu.au/cgi/viewcontent.cgi?article=3410&context=commpapers} and \url{https://cran.rapporter.net/web/packages/flexmix/vignettes/mixture-regressions.pdf}, or the following blog post (\url{https://www.r-bloggers.com/2013/06/estimating-finite-mixture-models-with-flexmix-package/}).
+
+
+% WHAT ELSE DOES FLEXMIX DO FOR US?
+
+The complete code for the extension of Flexmix for modelling mixtures of partially-linear monotone regressions is included below. The first code block implements the partial linear model with monotone shape constraints; the second code block integrates the partial linear model with the Flexmix framework; the third code block provides additional functions for the visualization of results.
+
+% initialize solution (CITE Finite Mixture Model Diagnostics Using Resampling Methods)
 
 
 \begin{knitrout}

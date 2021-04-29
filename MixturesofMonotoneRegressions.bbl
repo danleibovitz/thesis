@@ -12,6 +12,11 @@ Ayer, M., Brunk, H.~D., Ewing, G.~M., Reid, W.~T., and Silverman, E. (1955).
   Information}.
 \newblock {\em The Annals of Mathematical Statistics}, 26(4):641 -- 647.
 
+\bibitem[Bank, 2018]{worldbank}
+Bank, W. (2018).
+\newblock World bank open data.
+\newblock \url{https://data.worldbank.org/indicator/NY.GDP.PCAP.CD}.
+
 \bibitem[Breiman and Friedman, 1985]{backfit}
 Breiman, L. and Friedman, J.~H. (1985).
 \newblock Estimating optimal transformations for multiple regression and
@@ -42,6 +47,12 @@ Cheng, K.-F. and Lin, P.-E. (1981).
   distribution2.
 \newblock {\em Australian Journal of Statistics}, 23(2):186--195.
 
+\bibitem[De~Leeuw et~al., 2009]{genpava}
+De~Leeuw, J., Kurt, H., and Mair, P. (2009).
+\newblock Isotone optimization in r: Pool-adjacent-violators algorithm (pava)
+  and active set methods.
+\newblock {\em Journal of Statistical Software}, 32.
+
 \bibitem[Dempster et~al., 1977]{dempster}
 Dempster, A.~P., Laird, N.~M., and Rubin, D.~B. (1977).
 \newblock Maximum likelihood from incomplete data via the em algorithm.
@@ -53,6 +64,11 @@ Diggle, P., Morris, S., Elliott, P., and Shaddick, G. (1997).
 \newblock Regression modelling of disease risk in relation to point sources.
 \newblock {\em Journal of the Royal Statistical Society. Series A (Statistics
   in Society)}, 160(3):491--505.
+
+\bibitem[Efron, 1979]{efron}
+Efron, B. (1979).
+\newblock {Bootstrap Methods: Another Look at the Jackknife}.
+\newblock {\em The Annals of Statistics}, 7(1):1 -- 26.
 
 \bibitem[Engle et~al., 1986]{engle}
 Engle, R.~F., Granger, C. W.~J., Rice, J., and Weiss, A. (1986).
@@ -79,6 +95,16 @@ Frisen, M. (1986).
 \newblock {\em Journal of the Royal Statistical Society. Series D (The
   Statistician)}, 35(4):479--485.
 
+\bibitem[Geenens, 2011]{curse}
+Geenens, G. (2011).
+\newblock {Curse of dimensionality and related issues in nonparametric
+  functional regression}.
+\newblock {\em Statistics Surveys}, 5(none):30 -- 43.
+
+\bibitem[Gormley and Frühwirth-Schnatter, 2018]{mixexperts}
+Gormley, I.~C. and Frühwirth-Schnatter, S. (2018).
+\newblock Mixtures of experts models.
+
 \bibitem[Grenander, 1956]{grenander}
 Grenander, U. (1956).
 \newblock On the theory of mortality measurement.
@@ -90,6 +116,12 @@ Groeneboom, P., Jongbloed, G., and Wellner, J.~A. (2001).
   Theory}.
 \newblock {\em The Annals of Statistics}, 29(6):1653 -- 1698.
 
+\bibitem[Gr{\"u}n and Leisch, 2008]{mixglms}
+Gr{\"u}n, B. and Leisch, F. (2008).
+\newblock {\em Finite Mixtures of Generalized Linear Regression Models}, pages
+  205--230.
+\newblock Physica-Verlag HD, Heidelberg.
+
 \bibitem[Grün et~al., 2008]{mixglm}
 Grün, B., Leisch, F., Shalabh, S., and Heumann, C. (2008).
 \newblock {\em Finite Mixtures of Generalized Linear Regression Models}, pages
@@ -98,6 +130,11 @@ Grün, B., Leisch, F., Shalabh, S., and Heumann, C. (2008).
 \bibitem[Guntuboyina and Sen, 2018]{guntu}
 Guntuboyina, A. and Sen, B. (2018).
 \newblock Nonparametric shape-restricted regression.
+
+\bibitem[Hamilton and Truong, 1997]{truong}
+Hamilton, S.~A. and Truong, Y.~K. (1997).
+\newblock Local linear estimation in partly linear models.
+\newblock {\em Journal of Multivariate Analysis}, 60(1):1--19.
 
 \bibitem[Hanson and Pledger, 1976]{hanson}
 Hanson, D.~L. and Pledger, G. (1976).
@@ -152,6 +189,17 @@ Kiri~Wagstaff, C.~C. (2000).
 Kuosmanen, T. (2008).
 \newblock Representation theorem for convex nonparametric least squares.
 \newblock {\em The Econometrics Journal}, 11(2):308--325.
+
+\bibitem[Leisch, 2004]{flexmix}
+Leisch, F. (2004).
+\newblock {FlexMix}: A general framework for finite mixture models and latent
+  class regression in {R}.
+\newblock {\em Journal of Statistical Software}, 11(8):1--18.
+
+\bibitem[Liang, 2006]{hua}
+Liang, H. (2006).
+\newblock Estimation in partially linear models and numerical comparisons.
+\newblock {\em Computational Statistics \& Data Analysis}, 50(3):675--687.
 
 \bibitem[Luss et~al., 2012]{luss}
 Luss, R., Rosset, S., and Shahar, M. (2012).
@@ -226,6 +274,12 @@ Seijo, E. and Sen, B. (2011).
 \newblock {Nonparametric least squares estimation of a multivariate convex
   regression function}.
 \newblock {\em The Annals of Statistics}, 39(3):1633 -- 1657.
+
+\bibitem[Speckman, 1988]{speckman}
+Speckman, P. (1988).
+\newblock Kernel smoothing in partial linear models.
+\newblock {\em Journal of the Royal Statistical Society: Series B
+  (Methodological)}, 50(3):413--436.
 
 \bibitem[Viele and Tong, 2002]{viele}
 Viele, K. and Tong, B. (2002).
